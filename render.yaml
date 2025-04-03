@@ -3,11 +3,12 @@ services:
     name: hylo-saas
     env: node
     buildCommand: |
-      cd template/app
+      cd Hylo_Saas_Template/app
       npm install -g wasp
       wasp build
     startCommand: |
-      cd template/app
+      cd Hylo_Saas_Template/app
+      wasp db migrate-dev
       wasp start
     envVars:
       - key: DATABASE_URL
