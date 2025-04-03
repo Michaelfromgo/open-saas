@@ -2,8 +2,8 @@ services:
   - type: web
     name: hylo-saas
     env: node
-    buildCommand: cd Hylo_Saas_Template/app && npm install && curl -sSL https://get.wasp.sh/installer.sh | sh && export PATH="$HOME/.local/bin:$PATH" && wasp build --no-check
-    startCommand: cd Hylo_Saas_Template/app && export PATH="$HOME/.local/bin:$PATH" && wasp db migrate-dev && PORT=10000 wasp start:production
+    buildCommand: cd Hylo_Saas_Template/app && npm install && curl -sSL https://get.wasp.sh/installer.sh | sh && export PATH="/opt/render/.local/bin:$PATH" && wasp build --no-check
+    startCommand: cd Hylo_Saas_Template/app && /opt/render/.local/bin/wasp db migrate-dev && HOST=0.0.0.0 PORT=$PORT /opt/render/.local/bin/wasp start:production
     envVars:
       - key: PORT
         value: 10000
