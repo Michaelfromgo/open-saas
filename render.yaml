@@ -2,8 +2,8 @@ services:
   - type: web
     name: hylo-saas
     env: node
-    buildCommand: set -e && cd Hylo_Saas_Template/app && npm install -g wasp && npm install && wasp build
-    startCommand: cd Hylo_Saas_Template/app && wasp db migrate-dev && wasp start
+    buildCommand: cd Hylo_Saas_Template/app && npm install && npm install -g wasp && export PATH="$PATH:$(npm bin -g)" && wasp build
+    startCommand: cd Hylo_Saas_Template/app && export PATH="$PATH:$(npm bin -g)" && wasp db migrate-dev && wasp start
     envVars:
       - key: DATABASE_URL
         fromDatabase:
