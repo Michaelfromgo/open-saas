@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: hylo-saas
+    env: node
+    buildCommand: |
+      cd template/app
+      npm install -g wasp
+      wasp build
+    startCommand: |
+      cd template/app
+      wasp start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hylo-saas-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+      - key: REACT_APP_API_URL
+        value: https://hylo-saas.onrender.com
+      - key: REACT_APP_STRIPE_PUBLIC_KEY
+        sync: false
+      - key: STRIPE_API_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
+
+databases:
+  - name: hylo-saas-db
+    databaseName: hylo_saas
+    user: hylo_saas
+    plan: free 
