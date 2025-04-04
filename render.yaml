@@ -2,11 +2,13 @@ services:
   - type: web
     name: hylo-saas
     env: node
-    buildCommand: cd Hylo_Saas_Template/app && npm install && curl -sSL https://get.wasp.sh/installer.sh | sh && export PATH="/opt/render/.local/bin:$PATH" && wasp build --no-check
-    startCommand: cd Hylo_Saas_Template/app && curl -sSL https://get.wasp.sh/installer.sh | sh && export PATH="/opt/render/.local/bin:$PATH" && wasp db migrate-dev && cd .wasp/build/web-app && node server.js
+    buildCommand: echo "Build already completed locally" 
+    startCommand: cd Hylo_Saas_Template/app && ls -la .wasp/build && find .wasp/build -name "server.js" && cd .wasp/build && npm install && node $(find . -name "server.js" | head -1)
     envVars:
       - key: PORT
         value: 10000
+      - key: HOST
+        value: 0.0.0.0
       - key: DATABASE_URL
         fromDatabase:
           name: hylo-saas-db
