@@ -1,0 +1,33 @@
+{
+  "name": "OpenSaaS",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {"@tanstack/react-query": "^4.29.0",
+  "axios": "^1.4.0"
+},
+  "devDependencies": {"@tsconfig/vite-react": "^2.0.0",
+  "@types/react-dom": "^18.0.11",
+  "@vitejs/plugin-react": "^4.2.1"
+},
+  "scripts": {
+    "start": "vite",
+    "build": "tsc && vite build"
+  },
+  "engineStrict": true,
+  "engines": {
+      "node": ">=18.18.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
