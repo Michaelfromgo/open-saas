@@ -4,8 +4,7 @@ import { BlogUrl, DocsUrl } from '../../../shared/common';
 
 export const appNavigationItems: NavigationItem[] = [
   { name: 'AI Scheduler (Demo App)', to: routes.DemoAppRoute.to },
-  { name: 'File Upload (AWS S3)', to: routes.FileUploadRoute.to },
+  // { name: 'File Upload (AWS S3)', to: routes.FileUploadRoute.to }, // Removed File Upload link
   { name: 'Pricing', to: routes.PricingPageRoute.to },
-  { name: 'Documentation', to: DocsUrl },
-  { name: 'Blog', to: BlogUrl },
+  // Documentation and Blog links removed
 ];

@@ -69,6 +69,11 @@ There are two ways to get help or provide feedback (and we try to always respond
 1. [Open an issue](https://github.com/wasp-lang/open-saas/issues)
 2. [Wasp Discord](https://discord.gg/aCamt5wCpS) -- please direct questions to the #🙋questions forum channel
 
+
+## Start
+cd Hylo_Saas_Template/app
+wasp start
+
 ## Contributing
 
 Note that we've tried to get as many of the core features of a SaaS app into this template as possible, but there still might be some missing features or functionality.

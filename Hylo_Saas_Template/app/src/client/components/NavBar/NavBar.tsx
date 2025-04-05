@@ -27,8 +27,8 @@ export default function AppNavBar({ navigationItems }: { navigationItems: Naviga
   const { data: user, isLoading: isUserLoading } = useAuth();
   return (
     <header
-      className={cn('absolute inset-x-0 top-0 z-50 dark:bg-boxdark-2', {
-        'shadow sticky bg-white bg-opacity-50 backdrop-blur-lg backdrop-filter dark:border dark:border-gray-100/10':
+      className={cn('fixed inset-x-0 top-0 z-50 w-full dark:bg-boxdark-2', {
+        'shadow bg-white bg-opacity-50 backdrop-blur-lg backdrop-filter dark:border dark:border-gray-100/10':
           !isLandingPage,
       })}
     >

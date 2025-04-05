@@ -7,8 +7,6 @@ import avatarPlaceholder from '../client/static/avatar-placeholder.webp';
 export const landingPageNavigationItems: NavigationItem[] = [
   { name: 'Features', to: '#features' },
   { name: 'Pricing', to: routes.PricingPageRoute.to },
-  { name: 'Documentation', to: DocsUrl },
-  { name: 'Blog', to: BlogUrl },
 ];
 export const features = [
   {
@@ -70,8 +68,7 @@ export const faqs = [
 ];
 export const footerNavigation = {
   app: [
-    { name: 'Documentation', href: DocsUrl },
-    { name: 'Blog', href: BlogUrl },
+    // Documentation and Blog links removed
   ],
   company: [
     { name: 'About', href: 'https://wasp.sh' },

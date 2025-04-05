@@ -1,9 +1,8 @@
-import { features, faqs, footerNavigation, testimonials } from './contentSections';
+import { features, footerNavigation, testimonials } from './contentSections';
 import Hero from './components/Hero';
 import Clients from './components/Clients';
 import Features from './components/Features';
 import Testimonials from './components/Testimonials';
-import FAQ from './components/FAQ';
 import Footer from './components/Footer';
 
 export default function LandingPage() {
@@ -14,7 +13,6 @@ export default function LandingPage() {
         <Clients />
         <Features features={features} />
         <Testimonials testimonials={testimonials} />
-        <FAQ faqs={faqs} />
       </main>
       <Footer footerNavigation={footerNavigation} />
     </div>

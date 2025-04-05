@@ -4,7 +4,6 @@ app OpenSaaS {
   },
 
   title: "My Open SaaS App",
-  port: 10000,
 
   head: [
     "<meta charset='utf-8' />",
