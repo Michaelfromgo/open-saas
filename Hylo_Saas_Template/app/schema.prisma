@@ -129,6 +129,10 @@ model UserMealPreferences {
   allergies                 String[]
   cuisines                  String[]
   prepTime                  String
+  useLeftovers              Boolean         @default(true)
+  repeatBreakfast           Boolean         @default(true)
+  breakfastOptions          Int             @default(2)
+  measurementSystem         String          @default("us")
 }
 
 model MealPlan {

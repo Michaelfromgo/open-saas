@@ -16,6 +16,10 @@ export default function MealPlanOnboardingPage() {
   const [allergies, setAllergies] = useState<string[]>([]);
   const [cuisines, setCuisines] = useState<string[]>([]);
   const [prepTime, setPrepTime] = useState('30 min');
+  const [useLeftovers, setUseLeftovers] = useState(true);
+  const [repeatBreakfast, setRepeatBreakfast] = useState(true);
+  const [breakfastOptions, setBreakfastOptions] = useState(2);
+  const [measurementSystem, setMeasurementSystem] = useState('us');
 
   // Get user's existing preferences
   const { data: userPreferences, isLoading } = useQuery(getUserMealPreferences);
@@ -29,6 +33,12 @@ export default function MealPlanOnboardingPage() {
       setAllergies(userPreferences.allergies);
       setCuisines(userPreferences.cuisines);
       setPrepTime(userPreferences.prepTime);
+      
+      // Set new preference values if they exist
+      if (userPreferences.useLeftovers !== undefined) setUseLeftovers(userPreferences.useLeftovers);
+      if (userPreferences.repeatBreakfast !== undefined) setRepeatBreakfast(userPreferences.repeatBreakfast);
+      if (userPreferences.breakfastOptions !== undefined) setBreakfastOptions(userPreferences.breakfastOptions);
+      if (userPreferences.measurementSystem) setMeasurementSystem(userPreferences.measurementSystem);
     }
   }, [userPreferences]);
 
@@ -45,6 +55,10 @@ export default function MealPlanOnboardingPage() {
         allergies,
         cuisines,
         prepTime,
+        useLeftovers,
+        repeatBreakfast,
+        breakfastOptions,
+        measurementSystem,
       });
       
       // Navigate to meal plan page on success
@@ -141,6 +155,77 @@ export default function MealPlanOnboardingPage() {
               </option>
             ))}
           </select>
+        </div>
+        
+        {/* Measurement System */}
+        <div>
+          <label htmlFor="measurementSystem" className="block text-sm font-medium mb-1">
+            Measurement System
+          </label>
+          <select
+            id="measurementSystem"
+            value={measurementSystem}
+            onChange={(e) => setMeasurementSystem(e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="us">US (oz, lb, cups)</option>
+            <option value="metric">Metric (g, kg, ml)</option>
+          </select>
+        </div>
+        
+        {/* Leftovers Option */}
+        <div>
+          <div className="flex items-center">
+            <input
+              id="useLeftovers"
+              type="checkbox"
+              checked={useLeftovers}
+              onChange={(e) => setUseLeftovers(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label htmlFor="useLeftovers" className="ml-2 block text-sm font-medium text-gray-700">
+              Plan for leftovers (cook larger portions for multiple meals)
+            </label>
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            This will optimize your meal plan to include leftovers from dinners as lunches the next day.
+          </p>
+        </div>
+        
+        {/* Repeat Breakfast */}
+        <div>
+          <div className="flex items-center">
+            <input
+              id="repeatBreakfast"
+              type="checkbox"
+              checked={repeatBreakfast}
+              onChange={(e) => setRepeatBreakfast(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label htmlFor="repeatBreakfast" className="ml-2 block text-sm font-medium text-gray-700">
+              Repeat breakfast options during the week
+            </label>
+          </div>
+          
+          {repeatBreakfast && (
+            <div className="mt-2 pl-6">
+              <label htmlFor="breakfastOptions" className="block text-sm font-medium mb-1">
+                Number of breakfast options
+              </label>
+              <select
+                id="breakfastOptions"
+                value={breakfastOptions}
+                onChange={(e) => setBreakfastOptions(parseInt(e.target.value))}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                {[1, 2, 3, 4].map((num) => (
+                  <option key={num} value={num}>
+                    {num} {num === 1 ? 'option' : 'options'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
         
         {/* Diet Type */}

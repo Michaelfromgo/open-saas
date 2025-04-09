@@ -79,12 +79,12 @@ export const generateGptResponse: GenerateGptResponse<GptPayload, GeneratedSched
 
     // --- OpenAI API Call ---
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo', // you can use any model here, e.g. 'gpt-3.5-turbo', 'gpt-4', etc.
+      model: 'gpt-4o', // you can use any model here, e.g. 'gpt-3.5-turbo', 'gpt-4', etc.
       messages: [
         {
           role: 'system',
-          content:
-            'you are an expert daily planner. you will be given a list of main tasks and an estimated time to complete each task. You will also receive the total amount of hours to be worked that day. Your job is to return a detailed plan of how to achieve those tasks by breaking each task down into at least 3 subtasks each. MAKE SURE TO ALWAYS CREATE AT LEAST 3 SUBTASKS FOR EACH MAIN TASK PROVIDED BY THE USER! YOU WILL BE REWARDED IF YOU DO.',
+          content: `You help people break down their goals into step-by-step action plans.
+          Your response should be clear, actionable, and motivational.`,
         },
         {
           role: 'user',
@@ -93,67 +93,55 @@ export const generateGptResponse: GenerateGptResponse<GptPayload, GeneratedSched
           )}. Please help me plan my day by breaking the tasks down into actionable subtasks with time and priority status.`,
         },
       ],
-      tools: [
+      functions: [
         {
-          type: 'function',
-          function: {
-            name: 'parseTodaysSchedule',
-            description: 'parses the days tasks and returns a schedule',
-            parameters: {
-              type: 'object',
-              properties: {
-                mainTasks: {
-                  type: 'array',
-                  description: 'Name of main tasks provided by user, ordered by priority',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      name: {
-                        type: 'string',
-                        description: 'Name of main task provided by user',
+          name: 'createStepByStepPlan',
+          description: 'Create a step-by-step plan to achieve a specified goal',
+          parameters: {
+            type: 'object',
+            properties: {
+              mainTasks: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    title: {
+                      type: 'string',
+                      description: 'The title of the main task',
+                    },
+                    description: {
+                      type: 'string',
+                      description: 'A brief description of the main task',
+                    },
+                    subTasks: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          title: {
+                            type: 'string',
+                            description: 'The title of the sub-task',
+                          },
+                          description: {
+                            type: 'string',
+                            description: 'A brief description of the sub-task',
+                          },
+                        },
+                        required: ['title', 'description'],
                       },
-                      priority: {
-                        type: 'string',
-                        enum: ['low', 'medium', 'high'],
-                        description: 'task priority',
-                      },
+                      description: 'A list of sub-tasks that make up the main task',
                     },
                   },
+                  required: ['title', 'description', 'subTasks'],
                 },
-                subtasks: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      description: {
-                        type: 'string',
-                        description:
-                          'detailed breakdown and description of sub-task related to main task. e.g., \"Prepare your learning session by first reading through the documentation\"'
-                      },
-                      time: {
-                        type: 'number',
-                        description: 'time allocated for a given subtask in hours, e.g. 0.5',
-                      },
-                      mainTaskName: {
-                        type: 'string',
-                        description: 'name of main task related to subtask',
-                      },
-                    },
-                  },
-                },
+                description: 'The list of main tasks that make up the step-by-step plan',
               },
-              required: ['mainTasks', 'subtasks', 'time', 'priority'],
             },
+            required: ['mainTasks'],
           },
         },
       ],
-      tool_choice: {
-        type: 'function',
-        function: {
-          name: 'parseTodaysSchedule',
-        },
-      },
-      temperature: 1,
+      function_call: { name: 'createStepByStepPlan' },
     });
     // --- End OpenAI API Call ---
 
