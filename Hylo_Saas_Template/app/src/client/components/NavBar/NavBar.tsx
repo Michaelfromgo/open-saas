@@ -66,7 +66,10 @@ export default function AppNavBar({ navigationItems }: { navigationItems: Naviga
               </div>
             </WaspRouterLink>
           ) : (
-            <div className='ml-3'>
+            <div className='ml-3 flex items-center gap-4'>
+              <span className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                Credits: {user.credits}
+              </span>
               <DropdownUser user={user} />
             </div>
           )}
@@ -100,7 +103,12 @@ export default function AppNavBar({ navigationItems }: { navigationItems: Naviga
                     </div>
                   </WaspRouterLink>
                 ) : (
-                  <UserMenuItems user={user} setMobileMenuOpen={setMobileMenuOpen} />
+                  <>
+                    <div className='text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-right'>
+                      Credits: {user.credits}
+                    </div>
+                    <UserMenuItems user={user} setMobileMenuOpen={setMobileMenuOpen} />
+                  </>
                 )}
               </div>
               <div className='py-6'>

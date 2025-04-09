@@ -42,33 +42,42 @@ export const generateGptResponse: GenerateGptResponse<GptPayload, GeneratedSched
     time,
   }));
 
+  let usedCredits = false; // Flag to track if credits were used for this attempt
+
   try {
     // check if openai is initialized correctly with the API key
     if (openai instanceof Error) {
       throw openai;
     }
 
-    const hasCredits = context.user.credits > 0;
     const hasValidSubscription =
       !!context.user.subscriptionStatus &&
       context.user.subscriptionStatus !== 'deleted' &&
       context.user.subscriptionStatus !== 'past_due';
-    const canUserContinue = hasCredits || hasValidSubscription;
 
-    if (!canUserContinue) {
-      throw new HttpError(402, 'User has not paid or is out of credits');
+    // If user has a valid subscription, they can proceed without using credits
+    if (hasValidSubscription) {
+       console.log('User has valid subscription, proceeding without credit check.');
     } else {
-      console.log('decrementing credits');
-      await context.entities.User.update({
-        where: { id: context.user.id },
-        data: {
-          credits: {
-            decrement: 1,
-          },
-        },
-      });
+       // No valid subscription, check credits
+       if (context.user.credits <= 0) {
+           throw new HttpError(402, 'User is out of credits and has no active subscription.');
+       } else {
+           // Has credits, decrement them
+           console.log('User has credits, decrementing.');
+           await context.entities.User.update({
+               where: { id: context.user.id },
+               data: {
+                   credits: {
+                       decrement: 1,
+                   },
+               },
+           });
+           usedCredits = true; // Mark that credits were used
+       }
     }
 
+    // --- OpenAI API Call ---
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo', // you can use any model here, e.g. 'gpt-3.5-turbo', 'gpt-4', etc.
       messages: [
@@ -119,7 +128,7 @@ export const generateGptResponse: GenerateGptResponse<GptPayload, GeneratedSched
                       description: {
                         type: 'string',
                         description:
-                          'detailed breakdown and description of sub-task related to main task. e.g., "Prepare your learning session by first reading through the documentation"',
+                          'detailed breakdown and description of sub-task related to main task. e.g., \"Prepare your learning session by first reading through the documentation\"'
                       },
                       time: {
                         type: 'number',
@@ -146,6 +155,7 @@ export const generateGptResponse: GenerateGptResponse<GptPayload, GeneratedSched
       },
       temperature: 1,
     });
+    // --- End OpenAI API Call ---
 
     const gptArgs = completion?.choices[0]?.message?.tool_calls?.[0]?.function.arguments;
 
@@ -163,20 +173,30 @@ export const generateGptResponse: GenerateGptResponse<GptPayload, GeneratedSched
     });
 
     return JSON.parse(gptArgs);
+
   } catch (error: any) {
-    if (!context.user.subscriptionStatus && error?.statusCode != 402) {
-      await context.entities.User.update({
-        where: { id: context.user.id },
-        data: {
-          credits: {
-            increment: 1,
-          },
-        },
-      });
+    // If an error occurred *after* credits were decremented (and it wasn't a 402 error), increment them back.
+    if (usedCredits && error?.statusCode !== 402) {
+      console.log('Error occurred after decrementing credits, incrementing back.');
+      try {
+           await context.entities.User.update({
+               where: { id: context.user.id },
+               data: {
+                   credits: {
+                       increment: 1,
+                   },
+               },
+           });
+       } catch (incrementError) {
+           console.error("Failed to increment credits back after error:", incrementError);
+           // Decide how to handle this - maybe log critical error
+       }
     }
-    console.error(error);
+
+    console.error("Error in generateGptResponse:", error);
     const statusCode = error.statusCode || 500;
-    const errorMessage = error.message || 'Internal server error';
+    // Ensure 402 error retains its specific message
+    const errorMessage = error.statusCode === 402 ? error.message : (error.message || 'Internal server error');
     throw new HttpError(statusCode, errorMessage);
   }
 };

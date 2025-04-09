@@ -63,33 +63,52 @@ export async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session,
   prismaUserDelegate: PrismaClient["user"]
 ) {
+  console.log('Webhook: handleCheckoutSessionCompleted called', { session_id: session.id });
   const userStripeId = validateUserStripeIdOrThrow(session.customer);
+  console.log('Webhook: userStripeId', userStripeId);
   const { line_items } = await stripe.checkout.sessions.retrieve(session.id, {
     expand: ['line_items'],
   });
+  console.log('Webhook: line_items retrieved', { line_items });
 
   const lineItemPriceId = extractPriceId(line_items);
+  console.log('Webhook: lineItemPriceId', lineItemPriceId);
 
   const planId = getPlanIdByPriceId(lineItemPriceId);
+  console.log('Webhook: planId', planId);
   const plan = paymentPlans[planId];
+  console.log('Webhook: plan effect kind', plan.effect.kind);
 
   let subscriptionPlan: PaymentPlanId | undefined;
   let numOfCreditsPurchased: number | undefined;
   switch (plan.effect.kind) {
     case 'subscription':
       subscriptionPlan = planId;
+      console.log('Webhook: Setting subscription plan', { subscriptionPlan });
       break;
     case 'credits':
       numOfCreditsPurchased = plan.effect.amount;
+      console.log('Webhook: Setting credits', { numOfCreditsPurchased });
       break;
     default:
       assertUnreachable(plan.effect);
   }
 
-  return updateUserStripePaymentDetails(
-    { userStripeId, subscriptionPlan, numOfCreditsPurchased, datePaid: new Date() },
-    prismaUserDelegate
-  );
+  try {
+    const result = await updateUserStripePaymentDetails(
+      { userStripeId, subscriptionPlan, numOfCreditsPurchased, datePaid: new Date() },
+      prismaUserDelegate
+    );
+    console.log('Webhook: User payment details updated successfully', { 
+      userId: result.id, 
+      updatedCredits: result.credits,
+      plan: result.subscriptionPlan 
+    });
+    return result;
+  } catch (error) {
+    console.error('Webhook: Error updating user payment details', error);
+    throw error;
+  }
 }
 
 export async function handleInvoicePaid(invoice: Stripe.Invoice, prismaUserDelegate: PrismaClient["user"]) {

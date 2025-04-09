@@ -1,4 +1,5 @@
 import { type Task } from 'wasp/entities';
+import { routes, Link } from 'wasp/client/router';
 
 import {
   generateGptResponse,
@@ -107,19 +108,23 @@ function NewTaskForm({ handleCreateTask }: { handleCreateTask: typeof createTask
     ],
   });
   const [isPlanGenerating, setIsPlanGenerating] = useState<boolean>(false);
+  const [error, setError] = useState<null | { message?: string; statusCode?: number }>(null);
 
   const { data: tasks, isLoading: isTasksLoading } = useQuery(getAllTasksByUser);
 
   const handleSubmit = async () => {
+    setError(null);
     try {
       await handleCreateTask({ description });
       setDescription('');
     } catch (err: any) {
+      setError(err);
       window.alert('Error: ' + (err.message || 'Something went wrong'));
     }
   };
 
   const handleGeneratePlan = async () => {
+    setError(null);
     try {
       setIsPlanGenerating(true);
       const response = await generateGptResponse({
@@ -129,7 +134,10 @@ function NewTaskForm({ handleCreateTask }: { handleCreateTask: typeof createTask
         setResponse(response);
       }
     } catch (err: any) {
-      window.alert('Error: ' + (err.message || 'Something went wrong'));
+       setError(err);
+       if (err.statusCode !== 402) {
+         window.alert('Error: ' + (err.message || 'Something went wrong'));
+       }
     } finally {
       setIsPlanGenerating(false);
     }
@@ -195,6 +203,14 @@ function NewTaskForm({ handleCreateTask }: { handleCreateTask: typeof createTask
           <div className='text-gray-600 text-center'>Add tasks to begin</div>
         )}
       </div>
+
+      {error?.statusCode === 402 && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Out of Credits! </strong>
+          <span className="block sm:inline">{error.message || 'Please purchase a plan to continue generating schedules.'}</span>
+          <Link to={routes.PricingPageRoute.to} className="ml-2 underline font-semibold">Go to Pricing</Link>
+        </div>
+      )}
 
       <button
         type='button'
