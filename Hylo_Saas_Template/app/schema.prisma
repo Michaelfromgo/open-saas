@@ -28,6 +28,8 @@ model User {
   contactFormMessages       ContactFormMessage[]
   tasks                     Task[]
   files                     File[]
+  mealPreferences           UserMealPreferences?
+  mealPlans                 MealPlan[]
 }
 
 model GptResponse {
@@ -111,4 +113,30 @@ model ContactFormMessage {
   content                   String
   isRead                    Boolean         @default(false)
   repliedAt                 DateTime?
+}
+
+model UserMealPreferences {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    String          @unique
+
+  calorieTarget             Int
+  mealsPerDay               Int
+  dietType                  String[]
+  allergies                 String[]
+  cuisines                  String[]
+  prepTime                  String
+}
+
+model MealPlan {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    String
+
+  planData                  Json
 }

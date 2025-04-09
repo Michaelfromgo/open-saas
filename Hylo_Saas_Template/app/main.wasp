@@ -333,6 +333,43 @@ page AdminMessagesPage {
 }
 //#endregion
 
+//#region Messages
+route MessagesRoute { path: "/messages", to: MessagesPage }
+page MessagesPage {
+  authRequired: true,
+  component: import Messages from "@src/messages/MessagesPage"
+}
+//#endregion
+
+//#region Meal Plan
+route MealPlanOnboardingRoute { path: "/meal-plan/onboarding", to: MealPlanOnboardingPage }
+page MealPlanOnboardingPage {
+  authRequired: true,
+  component: import MealPlanOnboardingPage from "@src/meal-plan/MealPlanOnboardingPage"
+}
+
+route MealPlanRoute { path: "/meal-plan", to: MealPlanPage }
+page MealPlanPage {
+  authRequired: true,
+  component: import MealPlanPage from "@src/meal-plan/MealPlanPage"
+}
+
+action generateMealPlan {
+  fn: import { generateMealPlan } from "@src/meal-plan/operations",
+  entities: [User, UserMealPreferences, MealPlan]
+}
+
+query getUserMealPreferences {
+  fn: import { getUserMealPreferences } from "@src/meal-plan/operations",
+  entities: [User, UserMealPreferences]
+}
+
+query getLatestMealPlan {
+  fn: import { getLatestMealPlan } from "@src/meal-plan/operations",
+  entities: [User, MealPlan]
+}
+//#endregion
+
 //#region Newsletter
 job sendNewsletter {
   executor: PgBoss,
