@@ -68,6 +68,26 @@ export class Crew implements CrewInterface {
 
     this.addAgent({
       id: uuidv4(),
+      name: "Analysis Agent",
+      role: AgentRole.ANALYST,
+      goal: "Perform deep analysis of information",
+      description: "I analyze data and information to extract insights, patterns, and implications.",
+      allowDelegation: false,
+      verbose: true,
+    }, apiKey);
+
+    this.addAgent({
+      id: uuidv4(),
+      name: "Writer Agent",
+      role: AgentRole.WRITER,
+      goal: "Articulate findings and recommendations clearly",
+      description: "I synthesize information and craft well-structured, coherent content.",
+      allowDelegation: false,
+      verbose: true,
+    }, apiKey);
+
+    this.addAgent({
+      id: uuidv4(),
       name: "Execution Agent",
       role: AgentRole.EXECUTOR,
       goal: "Execute tasks efficiently",
@@ -197,10 +217,11 @@ export class Crew implements CrewInterface {
           status: t.status
         })))
       };
-    } catch (error) {
-      logger.error(`!!!ERROR!!! in crew execution: ${error.stack || error.message || error}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.stack || error.message : String(error);
+      logger.error(`!!!ERROR!!! in crew execution: ${errorMessage}`);
       this.status = 'error';
-      this.errorMessage = error.message;
+      this.errorMessage = error instanceof Error ? error.message : String(error);
       this.updatedAt = new Date();
       throw error;
     }
@@ -410,7 +431,7 @@ export class Crew implements CrewInterface {
     this.addTask({
       description: "Research: Collect information about the goal",
       expectedOutput: "Comprehensive research data",
-      assignedTo: getAgentId(this.agents.find(a => a.role === AgentRole.RESEARCHER))
+      assignedTo: getAgentId(this.agents.find(a => a.role === AgentRole.RESEARCHER)) || undefined
     });
     
     const researchTaskId = this.tasks[this.tasks.length - 1].id;
@@ -418,7 +439,7 @@ export class Crew implements CrewInterface {
     this.addTask({
       description: "Analysis: Analyze the collected information",
       expectedOutput: "Analysis report with insights",
-      assignedTo: getAgentId(this.agents.find(a => a.role === AgentRole.ANALYST)),
+      assignedTo: getAgentId(this.agents.find(a => a.role === AgentRole.ANALYST)) || undefined,
       dependencies: [researchTaskId]
     });
     
@@ -427,7 +448,7 @@ export class Crew implements CrewInterface {
     this.addTask({
       description: "Execution: Implement the solution",
       expectedOutput: "Implemented solution",
-      assignedTo: getAgentId(this.agents.find(a => a.role === AgentRole.EXECUTOR)),
+      assignedTo: getAgentId(this.agents.find(a => a.role === AgentRole.EXECUTOR)) || undefined,
       dependencies: [analysisTaskId]
     });
     
@@ -438,72 +459,51 @@ export class Crew implements CrewInterface {
     `;
   }
   
-  // Execute all tasks in dependency order
+  // Execute the tasks in dependency order
   private async executeTasks(): Promise<any[]> {
-    logger.info(`=== Starting executeTasks with ${this.tasks.length} total tasks ===`);
+    logger.info(`==== Starting executeTasks with ${this.tasks.length} tasks ====`);
+    const completed = new Set<string>();
     const results: any[] = [];
-    let allTasksCompleted = false;
-    let iterationCount = 0;
     
-    while (!allTasksCompleted) {
-      iterationCount++;
-      logger.info(`Task execution iteration #${iterationCount}`);
+    // Keep trying to execute tasks until no more can be executed
+    let progress = true;
+    while (progress) {
+      progress = false;
       
-      const executableTask = this.getExecutableTask();
-      
-      if (!executableTask) {
-        logger.info(`No executable task found in iteration #${iterationCount}`);
-        // Check if all tasks are completed
-        allTasksCompleted = this.tasks.every(t => t.status === 'completed' || t.status === 'failed');
-        logger.info(`All tasks completed? ${allTasksCompleted}`);
+      for (const task of this.tasks) {
+        // Skip tasks that are already completed or failed
+        if (task.status !== 'pending') continue;
         
-        if (!allTasksCompleted) {
-          // If there are still pending tasks but none are executable, we have a dependency issue
-          const pendingTasks = this.tasks.filter(t => t.status === 'pending');
-          logger.warn(`POTENTIAL STALL: No executable tasks found but ${pendingTasks.length} tasks are still pending. Possible circular dependency.`);
-          logger.warn(`Pending task IDs: ${pendingTasks.map(t => t.id).join(', ')}`);
-          logger.warn(`Pending task descriptions: ${pendingTasks.map(t => t.description).join(' | ')}`);
-          
-          // Report dependency issues
-          for (const task of pendingTasks) {
-            if (task.dependencies && task.dependencies.length > 0) {
-              const deps = task.dependencies.map(depId => {
-                const depTask = this.tasks.find(t => t.id === depId);
-                return depTask ? `${depId} (${depTask.status})` : `${depId} (not found)`;
-              });
-              logger.warn(`Task ${task.id} is waiting for dependencies: ${deps.join(', ')}`);
-            } else {
-              logger.warn(`Task ${task.id} has no dependencies but is still not executable!`);
-            }
-          }
-          
-          break;
+        // Check if all dependencies are completed
+        const allDependenciesMet = (task.dependencies || []).every(depId => completed.has(depId));
+        if (!allDependenciesMet) continue;
+        
+        logger.info(`Executing task ${task.id}: ${task.description}`);
+        task.status = 'in_progress';
+        task.updatedAt = new Date();
+        
+        try {
+          const result = await this.executeTask(task);
+          task.result = result;
+          task.status = 'completed';
+          completed.add(task.id);
+          results.push({
+            id: task.id,
+            description: task.description,
+            result
+          });
+          progress = true;
+        } catch (e: unknown) {
+          const errorMessage = e instanceof Error ? e.stack || e.message : String(e);
+          logger.error(`Task execution failed: ${errorMessage}`);
+          task.status = 'failed';
+          task.result = `Error: ${e instanceof Error ? e.message : String(e)}`;
         }
-        continue;
-      }
-      
-      // Execute the task
-      try {
-        logger.info(`Executing task ${executableTask.id}: ${executableTask.description}`);
-        this.updateTaskStatus(executableTask.id, 'in_progress');
         
-        const result = await this.executeTask(executableTask);
-        logger.info(`Task ${executableTask.id} execution completed with result length: ${result.length} chars`);
-        
-        this.updateTaskStatus(executableTask.id, 'completed', result);
-        results.push({ 
-          taskId: executableTask.id, 
-          description: executableTask.description,
-          result 
-        });
-        logger.info(`Task ${executableTask.id} marked as completed`);
-      } catch (error) {
-        logger.error(`!!!ERROR!!! executing task ${executableTask.id}: ${error.stack || error.message || error}`);
-        this.updateTaskStatus(executableTask.id, 'failed', `Error: ${error.message}`);
+        task.updatedAt = new Date();
       }
     }
     
-    logger.info(`=== executeTasks complete, ${results.length} tasks finished successfully ===`);
     return results;
   }
 
@@ -575,10 +575,12 @@ export class Crew implements CrewInterface {
     logger.info(`> About to call LLM API for task ${task.id}`);
     try {
       const response = await llm.invoke(messages);
+      const errorMessage = response instanceof Error ? response.stack || response.message : String(response);
       logger.info(`> LLM API call successful for task ${task.id}, response length: ${response.content.length} chars`);
       return response.content;
     } catch (e) {
-      logger.error(`> !!!ERROR!!! LLM API call failed for task ${task.id}: ${e.stack || e.message || e}`);
+      const errorMessage = e instanceof Error ? e.stack || e.message : String(e);
+      logger.error(`> !!!ERROR!!! LLM API call failed for task ${task.id}: ${errorMessage}`);
       throw e;
     }
   }
@@ -619,34 +621,33 @@ export class Crew implements CrewInterface {
       .join("\n\n---\n\n");
     
     logger.info(`Created combined results for synthesis, length: ${combinedResults.length} chars`);
-    
-    const messages = [
-      { 
-        role: "system", 
-        content: `You are ${synthesizer.name}, a ${synthesizer.role}. ${synthesizer.description}
-        Your job is to synthesize the results of multiple tasks into a coherent final output.`
-      },
-      { 
-        role: "user", 
-        content: `The overall goal was: ${this.goalText}
-        
-        Here are the results from all completed tasks:
-        
-        ${combinedResults}
-        
-        Please synthesize these results into a coherent, comprehensive final output that addresses the original goal.
-        Your synthesis should be well-structured, clear, and provide actionable conclusions or recommendations.`
-      }
-    ];
-    
-    logger.info(`About to call LLM API for synthesis`);
     try {
+      // Format combined results for input to LLM
+      const messages = [
+        { 
+          role: "system", 
+          content: `You are ${synthesizer.name}, a ${synthesizer.role}. ${synthesizer.description}
+          Your job is to synthesize the results of multiple tasks into a coherent final output.`
+        },
+        { 
+          role: "user", 
+          content: `Synthesize the following results into a comprehensive response for the goal: "${this.goalText}"
+    
+          ${combinedResults}
+          
+          Create a well-structured, comprehensive response that integrates all the information.
+          Format it properly with clear sections and provide a summary at the beginning.`
+        }
+      ];
+      
       const response = await llm.invoke(messages);
-      logger.info(`LLM API call successful for synthesis, response length: ${response.content.length} chars`);
-      return response.content;
-    } catch (e) {
-      logger.error(`!!!ERROR!!! LLM API call failed for synthesis: ${e.stack || e.message || e}`);
-      throw e;
+      logger.info(`Successfully generated synthesis response`);
+      return response.content as string;
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.stack || e.message : String(e);
+      logger.error(`Error in synthesis: ${errorMessage}`);
+      // Fall back to manual combination if synthesis fails
+      return `Goal: ${this.goalText}\n\n${combinedResults}`;
     }
   }
 }

@@ -1,0 +1,36 @@
+FROM node:20.0.0-alpine3.17 AS base
+RUN apk --no-cache -U upgrade # To ensure any potential security patches are applied.
+
+FROM base AS server-builder
+# Building on Apple's Silicon Mac needs python3
+RUN apk add --no-cache python3 build-base libtool autoconf automake
+WORKDIR /app
+COPY . .
+RUN cd server && npm install
+RUN cd server && npx prisma generate --schema='../db/schema.prisma'
+RUN cd server && npm run bundle
+
+FROM base AS server-production
+RUN apk add --no-cache python3
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=server-builder /app/node_modules ./node_modules
+COPY --from=server-builder /app/server/node_modules server/node_modules
+COPY --from=server-builder /app/server/bundle server/bundle
+COPY --from=server-builder /app/server/package*.json server/
+COPY --from=server-builder /app/db db
+
+# Create a small JavaScript file to ensure the server listens on 0.0.0.0
+RUN echo "// Add the following line to modify the server.js file \n\
+const fs = require('fs'); \n\
+const path = require('path'); \n\
+const serverJsPath = path.join('/app/server/bundle/server.js'); \n\
+let content = fs.readFileSync(serverJsPath, 'utf8'); \n\
+content = content.replace('server.listen(port)', 'server.listen(port, \"0.0.0.0\")'); \n\
+fs.writeFileSync(serverJsPath, content); \n\
+console.log('Server.js modified to listen on 0.0.0.0');" > /app/fix-server.js
+RUN node /app/fix-server.js
+
+EXPOSE 8080
+WORKDIR /app/server
+ENTRYPOINT ["npm", "run", "start-production"] 

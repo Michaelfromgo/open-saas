@@ -30,7 +30,7 @@ export default function TaskBreakdownViewer({
       const lines = output.split(/\n+/);
       return (
         <ul className="list-disc pl-5 space-y-2">
-          {lines.map((line, index) => {
+          {lines.map((line: string, index: number) => {
             // Clean up the line by removing list markers
             const cleanLine = line.replace(/^(\d+\.|\-|\•|\*)\s*/, '').trim();
             if (cleanLine) {
@@ -46,7 +46,7 @@ export default function TaskBreakdownViewer({
     const paragraphs = output.split(/\n\n+/);
     return (
       <div className="space-y-4">
-        {paragraphs.map((paragraph, index) => (
+        {paragraphs.map((paragraph: string, index: number) => (
           <p key={index} className="text-gray-800 dark:text-gray-200">{paragraph}</p>
         ))}
       </div>
@@ -106,8 +106,8 @@ export default function TaskBreakdownViewer({
       if (output.includes('1.') || output.includes('•') || output.includes('-')) {
         const lines = output.split(/\n+/);
         const items = lines
-          .filter(line => /^(\d+\.|\-|\•|\*)/.test(line.trim()))
-          .map(line => line.replace(/^(\d+\.|\-|\•|\*)\s*/, '').trim())
+          .filter((line: string) => /^(\d+\.|\-|\•|\*)/.test(line.trim()))
+          .map((line: string) => line.replace(/^(\d+\.|\-|\•|\*)\s*/, '').trim())
           .slice(0, 3);
         
         if (items.length > 0) {
@@ -140,6 +140,17 @@ export default function TaskBreakdownViewer({
   const completedTasks = task.subtasks.filter(st => st.status === 'completed');
   const totalTasks = task.subtasks.length;
   const completedPercentage = totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0;
+
+  const renderMultilineText = (text: string) => {
+    if (!text) return null;
+    
+    return text.split('\n').map((line: string, i: number) => (
+      <React.Fragment key={i}>
+        {line}
+        <br />
+      </React.Fragment>
+    ));
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/20">
@@ -276,5 +287,49 @@ function getStatusColor(status: string): string {
       return 'bg-orange-100 dark:bg-orange-800/30 text-orange-800 dark:text-orange-300';
     default:
       return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
+  }
+}
+
+function formatJSONOutput(text: string) {
+  // Try to parse as JSON first
+  try {
+    const parsedJson = JSON.parse(text);
+    return (
+      <pre className="bg-gray-50 dark:bg-gray-800 rounded p-3 overflow-auto text-xs">
+        {JSON.stringify(parsedJson, null, 2)}
+      </pre>
+    );
+  } catch (e) {
+    // Not valid JSON, check if it could be a markdown list
+    if (text.includes('\n') && (text.includes('- ') || text.includes('* ') || /^\d+\./.test(text))) {
+      const lines = text.split('\n').filter((l: string) => l.trim().length > 0);
+      
+      // Check if it looks like a list
+      const isListItem = (line: string) => line.trim().startsWith('- ') || 
+                                           line.trim().startsWith('* ') || 
+                                           /^\d+\./.test(line.trim());
+      
+      if (lines.some(isListItem)) {
+        return (
+          <ul className="list-disc pl-5 space-y-2">
+            {lines.map((line: string, index: number) => {
+              // Clean up the line by removing list markers
+              const cleanLine = line.replace(/^(\d+\.|\-|\•|\*)\s*/, '').trim();
+              return cleanLine ? <li key={index}>{cleanLine}</li> : null;
+            }).filter(Boolean)}
+          </ul>
+        );
+      }
+    }
+    
+    // Default to paragraph formatting
+    const paragraphs = text.split('\n\n');
+    return (
+      <div className="space-y-4">
+        {paragraphs.map((paragraph: string, index: number) => (
+          <p key={index} className="text-gray-800 dark:text-gray-200">{paragraph}</p>
+        ))}
+      </div>
+    );
   }
 } 

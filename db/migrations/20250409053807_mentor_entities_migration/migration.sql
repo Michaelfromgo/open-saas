@@ -1,0 +1,2 @@
+-- This file was created to fix the deployment issue
+-- If you need to make schema changes, update this file accordingly 

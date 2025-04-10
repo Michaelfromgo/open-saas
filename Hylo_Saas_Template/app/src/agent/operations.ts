@@ -81,201 +81,124 @@ export const createAgentTask: CreateAgentTask<{ goalText: string }, AgentTask> =
     throw new HttpError(401);
   }
 
-  // Create main task
-  const task = await prisma.agentTask.create({
-    data: {
-      goalText,
-      status: 'planning',
-      userId: context.user.id
-    }
-  });
-
-  // Initialize default tools if not already set up
-  const existingTools = await prisma.enabledTools.findMany({
-    where: { userId: context.user.id }
-  });
-
-  if (existingTools.length === 0) {
-    // Only enable the Search tool by default
-    await prisma.enabledTools.create({
+  try {
+    // Create main task
+    const task = await prisma.agentTask.create({
       data: {
-        toolName: 'Search',
-        enabled: true,
+        goalText,
+        status: 'planning',
         userId: context.user.id
       }
     });
-  }
 
-  // Run CrewAI instead of the original agent logic
-  try {
-    logger.info(`Using CrewAI for task ${task.id} with goal: ${goalText}`);
-    
-    const crew = createCrew({
-      name: "Task Crew",
-      description: "Processing agent task",
-      userId: context.user.id,
-      goalText,
-      apiKey: process.env.OPENAI_API_KEY || ''
+    // Initialize default tools if not already set up
+    const existingTools = await prisma.enabledTools.findMany({
+      where: { userId: context.user.id }
     });
-    
-    logger.info(`Crew created with ID ${crew.id} for task ${task.id}`);
-    
-    // Create initial subtasks based on default plan to show in UI
-    const defaultTasks = [
-      {
-        step: 1,
-        tool: 'CrewAI-Research',
-        thought: 'Collecting information about the topic',
-        input: goalText,
-        status: 'pending'
-      },
-      {
-        step: 2,
-        tool: 'CrewAI-Analysis',
-        thought: 'Analyzing collected information',
-        input: 'Analysis based on research',
-        status: 'pending'
-      },
-      {
-        step: 3,
-        tool: 'CrewAI-Execution',
-        thought: 'Creating implementation plan',
-        input: 'Implementation based on analysis',
-        status: 'pending'
-      }
-    ];
-    
-    // Create subtasks in DB to show progress
-    for (let index = 0; index < defaultTasks.length; index++) {
-      const subtask = defaultTasks[index];
-      await prisma.agentSubTask.create({
+
+    if (existingTools.length === 0) {
+      // Only enable the Search tool by default
+      await prisma.enabledTools.create({
         data: {
-          taskId: task.id,
-          tool: subtask.tool,
-          toolInput: subtask.input,
-          status: 'pending',
-          agentThought: subtask.thought,
-          stepNumber: subtask.step
+          toolName: 'Search',
+          enabled: true,
+          userId: context.user.id
         }
       });
     }
-    
-    // Run the crew asynchronously
-    (async () => {
-      try {
-        // Update first subtask to in_progress
-        await prisma.agentSubTask.updateMany({
-          where: { 
-            taskId: task.id,
-            stepNumber: 1
-          },
-          data: { status: 'in_progress' }
-        });
-        
-        // Execute the crew
-        const crewResult = await crew.run();
-        
-        // Update all subtasks based on crew tasks
-        const crewTasks = crew.getTasks();
-        for (let i = 0; i < crewTasks.length; i++) {
-          const crewTask = crewTasks[i];
-          // Find the corresponding subtask and update it
-          await prisma.agentSubTask.updateMany({
-            where: {
-              taskId: task.id,
-              stepNumber: i + 1
-            },
+
+    // Run CrewAI instead of the original agent logic
+    try {
+      logger.info(`Using CrewAI for task ${task.id} with goal: ${goalText}`);
+      
+      const crew = createCrew({
+        name: "Task Crew",
+        description: "Processing agent task",
+        userId: context.user.id,
+        goalText,
+        apiKey: process.env.OPENAI_API_KEY || ''
+      });
+      
+      logger.info(`Crew created with ID ${crew.id} for task ${task.id}`);
+      
+      // Create initial subtasks based on default plan to show in UI
+      const defaultTasks = [
+        {
+          step: 1,
+          tool: 'CrewAI-Research',
+          thought: 'Collecting information about the topic',
+          input: goalText,
+          status: 'pending'
+        },
+        {
+          step: 2,
+          tool: 'CrewAI-Analysis',
+          thought: 'Analyzing collected information',
+          input: 'Analysis based on research',
+          status: 'pending'
+        },
+        {
+          step: 3,
+          tool: 'CrewAI-Writer',
+          thought: 'Synthesizing and structuring the analysis',
+          input: 'Creating coherent content from analysis',
+          status: 'pending'
+        },
+        {
+          step: 4,
+          tool: 'CrewAI-Execution',
+          thought: 'Creating implementation plan',
+          input: 'Implementation based on analysis',
+          status: 'pending'
+        }
+      ];
+      
+      // Create the subtasks to display in UI
+      const subtasks = await Promise.all(
+        defaultTasks.map(async (t) => {
+          return await prisma.agentSubTask.create({
             data: {
-              status: crewTask.status === 'completed' ? 'completed' : 'failed',
-              toolOutput: crewTask.result || 'No output available'
+              taskId: task.id,
+              stepNumber: t.step,
+              tool: t.tool,
+              toolInput: { query: t.input },
+              status: t.status,
+              agentThought: t.thought
             }
           });
-        }
-        
-        // Update the main task with the final result
-        await prisma.agentTask.update({
-          where: { id: task.id },
-          data: {
-            status: 'completed',
-            finalOutput: crewResult.result
-          }
-        });
-        
-        logger.info(`CrewAI completed task ${task.id} successfully`);
-      } catch (error) {
-        logger.error(`Error in CrewAI execution for task ${task.id}: ${error.stack || error.message || error}`);
-        
-        // Update the task status to failed
-        await prisma.agentTask.update({
-          where: { id: task.id },
-          data: {
-            status: 'error',
-            errorMessage: `Error: ${error.message}`
-          }
-        });
-        
-        // Update all pending subtasks to failed
-        await prisma.agentSubTask.updateMany({
-          where: {
-            taskId: task.id,
-            status: 'pending'
-          },
-          data: { status: 'failed' }
-        });
+        })
+      );
+      
+      // Queue background job to execute the task
+      const firstSubtask = subtasks.find(s => s.stepNumber === 1);
+      if (firstSubtask) {
+        await processAgentSubTask.submit({ subtaskId: firstSubtask.id });
       }
-    })();
-    
-    // Return the initial task (subtasks will be updated asynchronously)
-    return {
-      ...task,
-      subtasks: [] // Initially empty, will be populated when client fetches again
-    } as AgentTask;
-  } catch (error) {
-    logger.error(`Error setting up CrewAI for task ${task.id}: ${error.stack || error.message || error}`);
-    
-    // Fall back to original implementation with basic subtasks
-    const subtasks = [
-      {
-        input: goalText,
-        thought: 'General search for information about the topic'
-      },
-      {
-        input: `${goalText} latest research`,
-        thought: 'Finding the most recent information on the topic'
-      }
-    ];
-
-    for (let index = 0; index < subtasks.length; index++) {
-      const subtask = subtasks[index];
-      // Ensure all subtasks are using the Search tool
-      const toolName = 'Search';
-      const createdSubtask = await prisma.agentSubTask.create({
+      
+      // Return the task with subtasks
+      return {
+        ...task,
+        subtasks
+      };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.stack || error.message : String(error);
+      logger.error(`Error in CrewAI setup: ${errorMessage}`);
+      
+      await prisma.agentTask.update({
+        where: { id: task.id },
         data: {
-          taskId: task.id,
-          tool: toolName,
-          toolInput: subtask.input || goalText,
-          status: 'pending',
-          agentThought: subtask.thought || `Research: ${subtask.input || goalText}`,
-          stepNumber: index + 1
+          status: 'error',
+          errorMessage: error instanceof Error ? error.message : String(error)
         }
       });
-
-      // Queue the subtask for processing
-      await processAgentSubTask.submit({ subtaskId: createdSubtask.id });
+      
+      throw error;
     }
-
-    // Update task status
-    await prisma.agentTask.update({
-      where: { id: task.id },
-      data: { status: 'executing' }
-    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.stack || error.message : String(error);
+    logger.error(`Error creating agent task: ${errorMessage}`);
+    throw error;
   }
-
-  // At the end, return the task with subtasks
-  return {
-    ...task,
-    subtasks: [] // Initially empty, will be populated later
-  } as AgentTask;
 };
 
 export const getAgentTask: GetAgentTask<{ taskId: string }, AgentTask | null> = async ({ taskId }, context) => {
@@ -316,63 +239,93 @@ export const getAgentTasks: GetAgentTasks<void, AgentTask[]> = async (_, context
   })) as AgentTask[];
 };
 
-export const updateAgentTaskStatus: UpdateAgentTaskStatus<{ taskId: string; status: string }, AgentTask> = async ({ taskId, status }, context) => {
-  if (!context.user) {
-    throw new HttpError(401);
+export const updateAgentTaskStatus: UpdateAgentTaskStatus<
+  {
+    taskId: string;
+    status: string;
+    finalOutput?: string;
+    errorMessage?: string;
+  },
+  AgentTask
+> = async ({ taskId, status, finalOutput, errorMessage }, context) => {
+  try {
+    if (!context.user) {
+      throw new HttpError(401, 'Unauthorized');
+    }
+
+    const task = await prisma.agentTask.findUnique({
+      where: { id: taskId },
+    });
+
+    if (!task) {
+      throw new HttpError(404, 'Task not found');
+    }
+
+    if (task.userId !== context.user.id) {
+      throw new HttpError(403, 'Forbidden');
+    }
+
+    const updatedTask = await prisma.agentTask.update({
+      where: { id: taskId },
+      data: {
+        status,
+        finalOutput: finalOutput || task.finalOutput,
+        errorMessage: errorMessage || task.errorMessage,
+      },
+      include: {
+        subtasks: true,
+      },
+    });
+
+    return updatedTask;
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.stack || error.message : String(error);
+    logger.error(`Error updating task status: ${errorMessage}`);
+    throw error; 
   }
-
-  const task = await prisma.agentTask.findUnique({
-    where: { id: taskId }
-  });
-
-  if (!task) {
-    throw new HttpError(404, "Task not found");
-  }
-
-  if (task.userId !== context.user.id) {
-    throw new HttpError(403, "Not authorized to update this task");
-  }
-
-  const updatedTask = await prisma.agentTask.update({
-    where: { id: taskId },
-    data: { status }
-  });
-
-  // Return with subtasks field
-  return {
-    ...updatedTask,
-    subtasks: []
-  } as AgentTask;
 };
 
-export const updateAgentSubTask: UpdateAgentSubTask<{ subtaskId: string; status: string; output: string | null }, AgentSubTask> = async ({ subtaskId, status, output }, context) => {
-  if (!context.user) {
-    throw new HttpError(401);
-  }
-
-  const subtask = await prisma.agentSubTask.findUnique({
-    where: { id: subtaskId },
-    include: { task: true }
-  });
-
-  if (!subtask) {
-    throw new HttpError(404, "Subtask not found");
-  }
-
-  if (subtask.task.userId !== context.user.id) {
-    throw new HttpError(403, "Not authorized to update this subtask");
-  }
-
-  // Handle the JSON value properly
-  const outputValue = output ? JSON.parse(output) : undefined;
-
-  return await prisma.agentSubTask.update({
-    where: { id: subtaskId },
-    data: { 
-      status, 
-      toolOutput: outputValue
+export const updateAgentSubTask: UpdateAgentSubTask<
+  {
+    id: string;
+    status: string;
+    toolOutput?: any;
+  },
+  AgentSubTask
+> = async ({ id, status, toolOutput }, context) => {
+  try {
+    if (!context.user) {
+      throw new HttpError(401, 'Unauthorized');
     }
-  });
+
+    const subtask = await prisma.agentSubTask.findUnique({
+      where: { id },
+      include: {
+        task: true,
+      },
+    });
+
+    if (!subtask) {
+      throw new HttpError(404, 'Subtask not found');
+    }
+
+    if (subtask.task.userId !== context.user.id) {
+      throw new HttpError(403, 'Forbidden');
+    }
+
+    // Update the subtask
+    return await prisma.agentSubTask.update({
+      where: { id },
+      data: {
+        status,
+        toolOutput: toolOutput !== undefined ? toolOutput : subtask.toolOutput,
+      },
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.stack || error.message : String(error);
+    logger.error(`Error updating subtask: ${errorMessage}`);
+    throw error;
+  }
 };
 
 export const getEnabledTools: GetEnabledTools<void, EnabledTools[]> = async (_, context) => {

@@ -1,0 +1,42 @@
+FROM node:20.0.0-alpine3.17 AS base
+RUN apk --no-cache -U upgrade # To ensure any potential security patches are applied.
+
+FROM base AS server-builder
+# Building on Apple's Silicon Mac needs python3
+RUN apk add --no-cache python3 build-base libtool autoconf automake
+WORKDIR /app
+COPY src ./src
+COPY package.json .
+COPY package-lock.json .
+COPY .wasp/build/server .wasp/build/server
+COPY .wasp/out/sdk .wasp/out/sdk
+RUN npm install && cd .wasp/build/server && npm install
+COPY db .wasp/build/db
+COPY .wasp/build/db .wasp/build/db
+RUN cd .wasp/build/server && npx prisma generate --schema='/app/.wasp/build/db/schema.prisma'
+RUN cd .wasp/build/server && npm run bundle
+
+FROM base AS server-production
+RUN apk add --no-cache python3
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=server-builder /app/node_modules ./node_modules
+COPY --from=server-builder /app/.wasp/build/server/node_modules .wasp/build/server/node_modules
+COPY --from=server-builder /app/.wasp/build/server/bundle .wasp/build/server/bundle
+COPY --from=server-builder /app/.wasp/build/server/package*.json .wasp/build/server/
+COPY --from=server-builder /app/.wasp/build/db .wasp/build/db
+
+# Create a small JavaScript file to ensure the server listens on 0.0.0.0
+RUN echo "// Add the following line to modify the server.js file \n\
+const fs = require('fs'); \n\
+const path = require('path'); \n\
+const serverJsPath = path.join('/app/.wasp/build/server/bundle/server.js'); \n\
+let content = fs.readFileSync(serverJsPath, 'utf8'); \n\
+content = content.replace('server.listen(port)', 'server.listen(port, \"0.0.0.0\")'); \n\
+fs.writeFileSync(serverJsPath, content); \n\
+console.log('Server.js modified to listen on 0.0.0.0');" > /app/fix-server.js
+RUN node /app/fix-server.js
+
+EXPOSE ${PORT}
+WORKDIR /app/.wasp/build/server
+ENTRYPOINT ["npm", "run", "start-production"] 
