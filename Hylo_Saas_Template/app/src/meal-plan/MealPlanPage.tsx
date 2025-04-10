@@ -295,11 +295,12 @@ export default function MealPlanPage() {
         </div>
       </div>
       
+      {/* Error Alert - Add dark mode colors */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+        <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4" role="alert">
           <p>{error}</p>
           {error.includes('credits') && (
-            <a href="/pricing" className="underline font-medium">Go to Pricing</a>
+            <a href="/pricing" className="underline font-medium dark:text-red-300">Go to Pricing</a>
           )}
         </div>
       )}
@@ -322,9 +323,9 @@ export default function MealPlanPage() {
         </div>
       )}
       
-      {/* Grocery List Modal */}
+      {/* Grocery List Modal - Fix dark mode colors */}
       {showGroceryList && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-black dark:bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full max-h-[90vh] overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h3 className="text-lg font-medium dark:text-white">Weekly Grocery List</h3>
@@ -343,7 +344,7 @@ export default function MealPlanPage() {
                 </button>
                 <button
                   onClick={() => setShowGroceryList(false)}
-                  className="inline-flex items-center px-3 py-1 border border-gray-300 dark:border-gray-700 text-sm font-medium rounded-md shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900"
+                  className="inline-flex items-center px-3 py-1 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900"
                 >
                   Close
                 </button>
@@ -356,7 +357,7 @@ export default function MealPlanPage() {
                     <input 
                       type="checkbox" 
                       defaultChecked={true}
-                      className="mr-2 mt-1 h-4 w-4 text-indigo-600 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 dark:checked:bg-indigo-600"
+                      className="mr-2 mt-1 h-4 w-4 text-indigo-600 dark:text-indigo-400 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:focus:ring-indigo-400 dark:bg-gray-700 dark:checked:bg-indigo-600"
                     />
                     <span>{item}</span>
                   </li>
@@ -393,7 +394,7 @@ export default function MealPlanPage() {
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`${snapshot.isDragging ? 'bg-blue-50' : ''}`}
+                            className={`${snapshot.isDragging ? 'bg-blue-50 dark:bg-blue-900/40' : ''}`}
                           >
                             <MealCard meal={meal} dragHandleProps={provided.dragHandleProps} />
                           </div>
@@ -484,7 +485,7 @@ function MealCard({ meal, dragHandleProps }: { meal: Meal, dragHandleProps: any 
             </div>
           </div>
           
-          {/* Serving Adjustment section */}
+          {/* Serving Adjustment section - Fix checkbox and select styling */}
           <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center mb-2">
               <input
@@ -492,7 +493,7 @@ function MealCard({ meal, dragHandleProps }: { meal: Meal, dragHandleProps: any 
                 id={`adjust-servings-${meal.title}`}
                 checked={adjustServings}
                 onChange={() => setAdjustServings(!adjustServings)}
-                className="h-4 w-4 text-indigo-600 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 dark:checked:bg-indigo-600"
+                className="h-4 w-4 text-indigo-600 dark:text-indigo-500 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:focus:ring-indigo-400 dark:bg-gray-700 dark:checked:bg-indigo-600"
                 onClick={(e) => e.stopPropagation()}
               />
               <label htmlFor={`adjust-servings-${meal.title}`} className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">

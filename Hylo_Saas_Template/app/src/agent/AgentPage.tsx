@@ -81,6 +81,12 @@ export default function AgentPage() {
     }
   };
 
+  const startNewSearch = () => {
+    setCurrentTask(null);
+    setStatus('idle');
+    navigate('/agent');
+  };
+
   const handleToolPermissionRequest = (toolName: string) => {
     setSelectedTool(toolName);
     setIsToolPermissionModalOpen(true);
@@ -107,16 +113,22 @@ export default function AgentPage() {
       <AgentSubHeader />
       
       <div className="w-full">
-        <GoalInputBox
-          onSubmit={handleGoalSubmit}
-          isLoading={status !== 'idle'}
-        />
+        {!currentTask && (
+          <GoalInputBox
+            onSubmit={handleGoalSubmit}
+            isLoading={status !== 'idle'}
+          />
+        )}
         
         {currentTask && (
           <div className="mt-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Task Breakdown</h2>
-              {['planning', 'executing'].includes(status) && (
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                {currentTask && currentTask.finalOutput && (currentTask.status === 'completed' || currentTask.status === 'stopped') 
+                  ? "Results" 
+                  : "Task Breakdown"}
+              </h2>
+              {['planning', 'executing'].includes(status) ? (
                 <button
                   onClick={handleStopTask}
                   disabled={isStoppingTask}
@@ -134,8 +146,19 @@ export default function AgentPage() {
                     <>Stop</>
                   )}
                 </button>
+              ) : ['completed', 'stopped', 'error'].includes(status) && (
+                <button
+                  onClick={startNewSearch}
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white px-4 py-2 rounded transition-colors duration-150 hover:shadow-md dark:hover:shadow-blue-500/20 text-sm flex items-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  New Search
+                </button>
               )}
             </div>
+            
             <TaskBreakdownViewer
               task={currentTask}
               onToolPermissionRequest={handleToolPermissionRequest}

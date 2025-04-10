@@ -3,21 +3,21 @@ app OpenSaaS {
     version: "^0.16.0"
   },
 
-  title: "My Open SaaS App",
+  title: "Hylo AI",
 
   head: [
     "<meta charset='utf-8' />",
-    "<meta name='description' content='Your apps main description and features.' />",
-    "<meta name='author' content='Your (App) Name' />",
-    "<meta name='keywords' content='saas, solution, product, app, service' />",
+    "<meta name='description' content='AI-powered research assistant and meal planning platform.' />",
+    "<meta name='author' content='Hylo AI' />",
+    "<meta name='keywords' content='AI, research, meal planning, saas, assistant' />",
     
     "<meta property='og:type' content='website' />",
-    "<meta property='og:title' content='Your Open SaaS App' />",
-    "<meta property='og:site_name' content='Your Open SaaS App' />",
-    "<meta property='og:url' content='https://your-saas-app.com' />",
-    "<meta property='og:description' content='Your apps main description and features.' />",
-    "<meta property='og:image' content='https://your-saas-app.com/public-banner.webp' />",
-    "<meta name='twitter:image' content='https://your-saas-app.com/public-banner.webp' />",
+    "<meta property='og:title' content='Hylo AI' />",
+    "<meta property='og:site_name' content='Hylo AI' />",
+    "<meta property='og:url' content='https://hylo-saas-client.fly.dev' />",
+    "<meta property='og:description' content='AI-powered research assistant and meal planning platform.' />",
+    "<meta property='og:image' content='https://hylo-saas-client.fly.dev/public-banner.webp' />",
+    "<meta name='twitter:image' content='https://hylo-saas-client.fly.dev/public-banner.webp' />",
     "<meta name='twitter:image:width' content='800' />",
     "<meta name='twitter:image:height' content='400' />",
     "<meta name='twitter:card' content='summary_large_image' />",
@@ -37,7 +37,7 @@ app OpenSaaS {
       //   (RequestPasswordReset(Route|Page), PasswordReset(Route|Page), EmailVerification(Route|Page))
       email: {
         fromField: {
-          name: "Open SaaS App",
+          name: "Hylo AI",
           email: "michael682682@gmail.com"
         },
         emailVerification: {
@@ -68,7 +68,7 @@ app OpenSaaS {
     },
     onAfterSignup: import { onAfterSignup } from "@src/auth/hooks",
     onAuthFailedRedirectTo: "/login",
-    onAuthSucceededRedirectTo: "/demo-app",
+    onAuthSucceededRedirectTo: "/agent",
   },
 
   db: {
@@ -89,7 +89,7 @@ app OpenSaaS {
     //   Once you are ready for production, switch to e.g. "SendGrid" or "Mailgun" providers. Check out https://docs.opensaas.sh/guides/email-sending/ .
     provider: SendGrid,
     defaultFrom: {
-      name: "Open SaaS App",
+      name: "Hylo AI",
       // When using a real provider, e.g. SendGrid, you must use the same email address that you configured your account to send out emails with!
       email: "michael682682@gmail.com"
     },

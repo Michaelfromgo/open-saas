@@ -109,13 +109,13 @@ export default function MealPlanOnboardingPage() {
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
-      <h1 className="text-2xl font-bold mb-6">Customize Your Meal Plan</h1>
+      <h1 className="text-2xl font-bold mb-6 dark:text-white">Customize Your Meal Plan</h1>
       
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+        <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4" role="alert">
           <p>{error}</p>
           {error.includes('credits') && (
-            <a href="/pricing" className="underline font-medium">Go to Pricing</a>
+            <a href="/pricing" className="underline font-medium dark:text-red-300">Go to Pricing</a>
           )}
         </div>
       )}
@@ -123,7 +123,7 @@ export default function MealPlanOnboardingPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Calorie Target */}
         <div>
-          <label htmlFor="calorieTarget" className="block text-sm font-medium mb-1">
+          <label htmlFor="calorieTarget" className="block text-sm font-medium mb-1 dark:text-gray-200">
             Daily Calorie Target (kcal)
           </label>
           <input
@@ -133,21 +133,21 @@ export default function MealPlanOnboardingPage() {
             onChange={(e) => setCalorieTarget(parseInt(e.target.value))}
             min="1000"
             max="5000"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:bg-gray-700 dark:text-white"
             required
           />
         </div>
         
         {/* Meals Per Day */}
         <div>
-          <label htmlFor="mealsPerDay" className="block text-sm font-medium mb-1">
+          <label htmlFor="mealsPerDay" className="block text-sm font-medium mb-1 dark:text-gray-200">
             Meals Per Day
           </label>
           <select
             id="mealsPerDay"
             value={mealsPerDay}
             onChange={(e) => setMealsPerDay(parseInt(e.target.value))}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:bg-gray-700 dark:text-white"
           >
             {[2, 3, 4, 5, 6].map((num) => (
               <option key={num} value={num}>
@@ -159,14 +159,14 @@ export default function MealPlanOnboardingPage() {
         
         {/* Measurement System */}
         <div>
-          <label htmlFor="measurementSystem" className="block text-sm font-medium mb-1">
+          <label htmlFor="measurementSystem" className="block text-sm font-medium mb-1 dark:text-gray-200">
             Measurement System
           </label>
           <select
             id="measurementSystem"
             value={measurementSystem}
             onChange={(e) => setMeasurementSystem(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:bg-gray-700 dark:text-white"
           >
             <option value="us">US (oz, lb, cups)</option>
             <option value="metric">Metric (g, kg, ml)</option>
@@ -181,13 +181,13 @@ export default function MealPlanOnboardingPage() {
               type="checkbox"
               checked={useLeftovers}
               onChange={(e) => setUseLeftovers(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 dark:text-indigo-500 focus:ring-indigo-500 dark:focus:ring-indigo-400 dark:bg-gray-700 dark:checked:bg-indigo-600"
             />
-            <label htmlFor="useLeftovers" className="ml-2 block text-sm font-medium text-gray-700">
+            <label htmlFor="useLeftovers" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
               Plan for leftovers (cook larger portions for multiple meals)
             </label>
           </div>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             This will optimize your meal plan to include leftovers from dinners as lunches the next day.
           </p>
         </div>
@@ -200,23 +200,23 @@ export default function MealPlanOnboardingPage() {
               type="checkbox"
               checked={repeatBreakfast}
               onChange={(e) => setRepeatBreakfast(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 dark:text-indigo-500 focus:ring-indigo-500 dark:focus:ring-indigo-400 dark:bg-gray-700 dark:checked:bg-indigo-600"
             />
-            <label htmlFor="repeatBreakfast" className="ml-2 block text-sm font-medium text-gray-700">
+            <label htmlFor="repeatBreakfast" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
               Repeat breakfast options during the week
             </label>
           </div>
           
           {repeatBreakfast && (
             <div className="mt-2 pl-6">
-              <label htmlFor="breakfastOptions" className="block text-sm font-medium mb-1">
+              <label htmlFor="breakfastOptions" className="block text-sm font-medium mb-1 dark:text-gray-200">
                 Number of breakfast options
               </label>
               <select
                 id="breakfastOptions"
                 value={breakfastOptions}
                 onChange={(e) => setBreakfastOptions(parseInt(e.target.value))}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:bg-gray-700 dark:text-white"
               >
                 {[1, 2, 3, 4].map((num) => (
                   <option key={num} value={num}>
@@ -230,17 +230,17 @@ export default function MealPlanOnboardingPage() {
         
         {/* Diet Type */}
         <div>
-          <span className="block text-sm font-medium mb-2">Diet Type</span>
+          <span className="block text-sm font-medium mb-2 dark:text-gray-200">Diet Type</span>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {['No restriction', 'Vegan', 'Vegetarian', 'Keto', 'Paleo'].map((diet) => (
               <label key={diet} className="inline-flex items-center">
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 dark:text-indigo-500 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:focus:ring-indigo-400 dark:focus:ring-opacity-40 dark:bg-gray-700 dark:checked:bg-indigo-600"
                   checked={dietType.includes(diet)}
                   onChange={() => handleDietTypeChange(diet)}
                 />
-                <span className="ml-2">{diet}</span>
+                <span className="ml-2 dark:text-gray-300">{diet}</span>
               </label>
             ))}
           </div>
@@ -248,17 +248,17 @@ export default function MealPlanOnboardingPage() {
         
         {/* Allergies */}
         <div>
-          <span className="block text-sm font-medium mb-2">Allergies (Optional)</span>
+          <span className="block text-sm font-medium mb-2 dark:text-gray-200">Allergies (Optional)</span>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {['Nuts', 'Dairy', 'Eggs', 'Gluten', 'Soy', 'Shellfish'].map((allergy) => (
               <label key={allergy} className="inline-flex items-center">
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 dark:text-indigo-500 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:focus:ring-indigo-400 dark:focus:ring-opacity-40 dark:bg-gray-700 dark:checked:bg-indigo-600"
                   checked={allergies.includes(allergy)}
                   onChange={() => handleAllergyChange(allergy)}
                 />
-                <span className="ml-2">{allergy}</span>
+                <span className="ml-2 dark:text-gray-300">{allergy}</span>
               </label>
             ))}
           </div>
@@ -266,17 +266,17 @@ export default function MealPlanOnboardingPage() {
         
         {/* Cuisines */}
         <div>
-          <span className="block text-sm font-medium mb-2">Preferred Cuisines (Optional)</span>
+          <span className="block text-sm font-medium mb-2 dark:text-gray-200">Preferred Cuisines (Optional)</span>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {['Mediterranean', 'Asian', 'Mexican', 'American', 'Italian', 'Indian'].map((cuisine) => (
               <label key={cuisine} className="inline-flex items-center">
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 dark:text-indigo-500 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:focus:ring-indigo-400 dark:focus:ring-opacity-40 dark:bg-gray-700 dark:checked:bg-indigo-600"
                   checked={cuisines.includes(cuisine)}
                   onChange={() => handleCuisineChange(cuisine)}
                 />
-                <span className="ml-2">{cuisine}</span>
+                <span className="ml-2 dark:text-gray-300">{cuisine}</span>
               </label>
             ))}
           </div>
@@ -284,14 +284,14 @@ export default function MealPlanOnboardingPage() {
         
         {/* Prep Time */}
         <div>
-          <label htmlFor="prepTime" className="block text-sm font-medium mb-1">
+          <label htmlFor="prepTime" className="block text-sm font-medium mb-1 dark:text-gray-200">
             Maximum Preparation Time
           </label>
           <select
             id="prepTime"
             value={prepTime}
             onChange={(e) => setPrepTime(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:bg-gray-700 dark:text-white"
           >
             <option value="15 min">15 minutes</option>
             <option value="30 min">30 minutes</option>
@@ -307,7 +307,7 @@ export default function MealPlanOnboardingPage() {
             type="submit"
             disabled={isSubmitting}
             className={cn(
-              "w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500",
+              "w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900",
               isSubmitting && "opacity-75 cursor-not-allowed"
             )}
           >

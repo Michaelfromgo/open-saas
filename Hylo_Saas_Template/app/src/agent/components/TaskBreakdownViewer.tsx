@@ -1,5 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AgentTask } from '../types';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+
+// Import the Marked class constructor to use synchronous parsing
+import { Marked } from 'marked';
+
+// Create a new instance with synchronous parsing
+const synchronousMarked = new Marked({
+  async: false
+});
 
 interface TaskBreakdownViewerProps {
   task: AgentTask;
@@ -11,7 +21,24 @@ export default function TaskBreakdownViewer({
   onToolPermissionRequest,
 }: TaskBreakdownViewerProps) {
   const [expandedSteps, setExpandedSteps] = useState<{[key: string]: boolean}>({});
+  const resultsDivRef = useRef<HTMLDivElement>(null);
   
+  // Effect to remove redundant title headings from rendered HTML
+  useEffect(() => {
+    if (resultsDivRef.current && task?.goalText) {
+      const goalText = task.goalText.trim();
+      const headings = resultsDivRef.current.querySelectorAll('h1, h2, h3');
+      
+      // Check the first heading to see if it matches our goal text
+      if (headings.length > 0) {
+        const firstHeading = headings[0];
+        if (firstHeading.textContent?.trim().toLowerCase() === goalText.toLowerCase()) {
+          (firstHeading as HTMLElement).style.display = 'none';
+        }
+      }
+    }
+  }, [task?.finalOutput, task?.goalText]);
+
   if (!task) {
     return (
       <div className="p-4">
@@ -22,35 +49,58 @@ export default function TaskBreakdownViewer({
 
   // Format the final output if it exists
   const formatFinalOutput = (output: string) => {
-    if (!output) return null;
-    
-    // Try to determine if the output is a list
-    if (output.includes('1.') || output.includes('•') || output.includes('-')) {
-      // Split by common list markers
-      const lines = output.split(/\n+/);
+    try {
+      // Check if the output starts with a heading that matches the task goal
+      // This helps remove the redundant title in the results section
+      let processedOutput = output;
+      const goalTextLower = task.goalText.toLowerCase().trim();
+      const titlePattern = new RegExp(`^#\\s+${goalTextLower}`, 'i');
+      const titlePattern2 = new RegExp(`^##\\s+${goalTextLower}`, 'i');
+      const titlePattern3 = new RegExp(`^###\\s+${goalTextLower}`, 'i');
+      
+      // Check for various heading formats and remove if they match the goal text
+      const lines = processedOutput.split('\n');
+      if (
+        lines[0] && (
+          titlePattern.test(lines[0]) || 
+          titlePattern2.test(lines[0]) || 
+          titlePattern3.test(lines[0]) ||
+          lines[0].toLowerCase().trim() === goalTextLower
+        )
+      ) {
+        // Remove the first line and any blank lines immediately after
+        let i = 1;
+        while (i < lines.length && lines[i].trim() === '') {
+          i++;
+        }
+        processedOutput = lines.slice(i).join('\n');
+      }
+      
+      // Use synchronous marked instance and force type to string with double assertion
+      const rawHtml = synchronousMarked.parse(processedOutput) as unknown as string;
+      
+      // Sanitize HTML to prevent XSS
+      const cleanHtml = DOMPurify.sanitize(rawHtml, { 
+        ADD_ATTR: ['target', 'rel'], 
+        ADD_TAGS: ['iframe'] 
+      });
+      
+      // Return HTML div with dangerouslySetInnerHTML for React
+      return <div 
+        className="markdown-content" 
+        dangerouslySetInnerHTML={{ __html: cleanHtml }} 
+      />;
+    } catch (error) {
+      // Fallback to simple text with line breaks for paragraphs
+      const paragraphs = output.split(/\n\n+/);
       return (
-        <ul className="list-disc pl-5 space-y-2">
-          {lines.map((line: string, index: number) => {
-            // Clean up the line by removing list markers
-            const cleanLine = line.replace(/^(\d+\.|\-|\•|\*)\s*/, '').trim();
-            if (cleanLine) {
-              return <li key={index} className="text-gray-800 dark:text-gray-200">{cleanLine}</li>;
-            }
-            return null;
-          }).filter(Boolean)}
-        </ul>
+        <div className="space-y-4">
+          {paragraphs.map((paragraph: string, index: number) => (
+            <p key={index} className="text-gray-800 dark:text-gray-200">{paragraph}</p>
+          ))}
+        </div>
       );
     }
-    
-    // For paragraphs
-    const paragraphs = output.split(/\n\n+/);
-    return (
-      <div className="space-y-4">
-        {paragraphs.map((paragraph: string, index: number) => (
-          <p key={index} className="text-gray-800 dark:text-gray-200">{paragraph}</p>
-        ))}
-      </div>
-    );
   };
 
   // Generate a user-friendly task name based on the tool and goal
@@ -160,6 +210,18 @@ export default function TaskBreakdownViewer({
         <p className="mt-1 text-lg font-medium text-gray-900 dark:text-white">{task.goalText}</p>
       </div>
       
+      {/* Final results section - Moved to top */}
+      {task.finalOutput && (task.status === 'completed' || task.status === 'stopped') && (
+        <div className="p-4 border-b border-gray-200 dark:border-gray-600">
+          <div 
+            ref={resultsDivRef}
+            className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 prose dark:prose-invert dark:prose-headings:text-white dark:prose-p:text-gray-300 max-w-none"
+          >
+            {formatFinalOutput(task.finalOutput)}
+          </div>
+        </div>
+      )}
+      
       {/* Task header section */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-600">
         <div className="flex justify-between items-start">
@@ -248,16 +310,6 @@ export default function TaskBreakdownViewer({
           ))}
         </div>
       </div>
-
-      {/* Final results section */}
-      {task.finalOutput && (task.status === 'completed' || task.status === 'stopped') && (
-        <div className="border-t border-gray-200 dark:border-gray-600 p-4">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Key Findings</h3>
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 prose dark:prose-invert dark:prose-headings:text-white dark:prose-p:text-gray-300 max-w-none">
-            {formatFinalOutput(task.finalOutput)}
-          </div>
-        </div>
-      )}
 
       {/* Error message if present */}
       {task.errorMessage && (

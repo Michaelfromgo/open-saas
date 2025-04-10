@@ -179,22 +179,67 @@ export async function processAgentSubTask(): Promise<void> {
           };
         });
         
-        // Generate a summary
-        let finalOutput = `# Results for "${subtask.task.goalText}"\n\n`;
+        // Find research results with links to format properly
+        const researchSubtask = subtaskOutputs.find(st => st.tool === 'CrewAI-Research');
+        const writerSubtask = subtaskOutputs.find(st => st.tool === 'CrewAI-Writer');
+        const analysisSubtask = subtaskOutputs.find(st => st.tool === 'CrewAI-Analysis');
+        const executionSubtask = subtaskOutputs.find(st => st.tool === 'CrewAI-Execution');
         
-        const typedResults = subtaskOutputs as Array<{
-          tool: string;
-          thought: string;
-          output: string;
-        }>;
+        // Get the main question/goal
+        const goalText = subtask.task.goalText;
         
-        typedResults.forEach((result: any, index: number) => {
-          finalOutput += `## ${result.tool.replace('CrewAI-', '')}\n`;
-          if (result.thought) {
-            finalOutput += `${result.thought}\n\n`;
+        // Create a well-formatted final output
+        let finalOutput = `# ${goalText}\n\n`;
+        
+        // Add a direct answer first (from the writer and execution subtasks)
+        if (writerSubtask || executionSubtask) {
+          finalOutput += `## Answer\n\n`;
+          if (writerSubtask && writerSubtask.output) {
+            finalOutput += `${writerSubtask.output}\n\n`;
+          } else if (executionSubtask && executionSubtask.output) {
+            finalOutput += `${executionSubtask.output}\n\n`;
           }
-          finalOutput += `${result.output}\n\n`;
-        });
+        }
+        
+        // Extract and format sources if available in research output
+        if (researchSubtask) {
+          const researchText = researchSubtask.output;
+          
+          // Try to extract sources with regex
+          const sourceRegex = /## Source (\d+): (.*?)\n(.*?)\n\nURL: (https?:\/\/[^\s]+)/gm;
+          const sources: Array<{ number: string; title: string; snippet: string; url: string }> = [];
+          let match;
+          
+          while ((match = sourceRegex.exec(researchText)) !== null) {
+            sources.push({
+              number: match[1],
+              title: match[2],
+              snippet: match[3],
+              url: match[4]
+            });
+          }
+          
+          if (sources.length > 0) {
+            finalOutput += `## Sources\n\n`;
+            sources.forEach(source => {
+              finalOutput += `### [${source.title}](${source.url})\n`;
+              finalOutput += `${source.snippet}\n\n`;
+            });
+          }
+          
+          // Try to extract key information if available
+          const keyInfoRegex = /## Key Information\n([\s\S]*?)(?:\n\n\n|$)/m;
+          const keyInfoMatch = keyInfoRegex.exec(researchText);
+          
+          if (keyInfoMatch && keyInfoMatch[1]) {
+            finalOutput += `## Key Information\n\n${keyInfoMatch[1].trim()}\n\n`;
+          }
+        }
+        
+        // Add detailed analysis if available
+        if (analysisSubtask && analysisSubtask.output) {
+          finalOutput += `## Analysis\n\n${analysisSubtask.output}\n\n`;
+        }
         
         // Update main task with final output and completed status
         await prisma.agentTask.update({
