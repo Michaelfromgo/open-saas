@@ -7,16 +7,6 @@ import { createCrew } from '../server/agent/crewAI';
 // Add tracing log for debugging
 logger.info("====== AGENT OPERATIONS MODULE LOADED ======");
 
-// Define the operation types
-type CreateAgentTask<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
-type GetAgentTask<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
-type GetAgentTasks<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
-type UpdateAgentTaskStatus<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
-type UpdateAgentSubTask<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
-type GetEnabledTools<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
-type UpdateEnabledTools<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
-type StopAgentTask<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
-
 // Define types directly to avoid import errors
 type AgentTask = {
   id: string;
@@ -46,14 +36,15 @@ type EnabledTools = {
   enabled: boolean;
 };
 
-// Dummy service to replace the imported one
-const processAgentSubTask = {
-  submit: async ({ subtaskId }: { subtaskId: string }) => {
-    console.log(`Submitting subtask for processing: ${subtaskId}`);
-    // In a real implementation, this would queue the job
-    return Promise.resolve();
-  }
-};
+// Define type for the various operations
+type CreateAgentTask<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
+type GetAgentTask<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
+type GetAgentTasks<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
+type UpdateAgentTaskStatus<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
+type UpdateAgentSubTask<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
+type GetEnabledTools<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
+type UpdateEnabledTools<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
+type StopAgentTask<TArgs, TResult> = (args: TArgs, context: any) => Promise<TResult>;
 
 // OpenAI setup
 const openai = new OpenAI({
@@ -82,6 +73,8 @@ export const createAgentTask: CreateAgentTask<{ goalText: string }, AgentTask> =
   }
 
   try {
+    logger.info(`Creating agent task for user ${context.user.id} with goal: ${goalText}`);
+    
     // Create main task
     const task = await prisma.agentTask.create({
       data: {
@@ -97,10 +90,18 @@ export const createAgentTask: CreateAgentTask<{ goalText: string }, AgentTask> =
     });
 
     if (existingTools.length === 0) {
-      // Only enable the Search tool by default
+      // Enable both Search and SerperSearch tools by default
       await prisma.enabledTools.create({
         data: {
           toolName: 'Search',
+          enabled: true,
+          userId: context.user.id
+        }
+      });
+      
+      await prisma.enabledTools.create({
+        data: {
+          toolName: 'SerperSearch',
           enabled: true,
           userId: context.user.id
         }
@@ -172,7 +173,185 @@ export const createAgentTask: CreateAgentTask<{ goalText: string }, AgentTask> =
       // Queue background job to execute the task
       const firstSubtask = subtasks.find(s => s.stepNumber === 1);
       if (firstSubtask) {
-        await processAgentSubTask.submit({ subtaskId: firstSubtask.id });
+        logger.info(`Processing first subtask ${firstSubtask.id} directly`);
+        try {
+          // Update the task status to executing
+          await prisma.agentTask.update({
+            where: { id: task.id },
+            data: { 
+              status: 'executing' 
+            }
+          });
+          
+          // Actually perform the search for the first subtask instead of simulating
+          if (firstSubtask.tool === 'CrewAI-Research') {
+            logger.info(`Performing actual search for task with goal: ${goalText}`);
+            
+            // Create a search query from the goal text
+            const toolInput = firstSubtask.toolInput as { query?: string } || {};
+            const searchQuery = typeof toolInput.query === 'string' ? toolInput.query : goalText;
+            
+            // Import the search function directly
+            const { default: axios } = await import('axios');
+            const SERPER_API_KEY = process.env.SERPER_API_KEY;
+            const SERPER_SEARCH_URL = 'https://google.serper.dev/search';
+            
+            if (!SERPER_API_KEY) {
+              logger.warn("Serper API key not found, using OpenAI as fallback");
+              
+              // Use OpenAI as fallback
+              const openai = new OpenAI({
+                apiKey: process.env.OPENAI_API_KEY
+              });
+              
+              const response = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: [
+                  {
+                    role: "system",
+                    content: "You are a research specialist. Research the topic thoroughly and provide comprehensive information. Structure your response as a detailed research document with clear sections."
+                  },
+                  {
+                    role: "user",
+                    content: `Research task: ${searchQuery}`
+                  }
+                ]
+              });
+              
+              await prisma.agentSubTask.update({
+                where: { id: firstSubtask.id },
+                data: { 
+                  status: 'completed',
+                  toolOutput: JSON.stringify({
+                    result: response.choices[0].message.content,
+                    source: "AI Research (OpenAI)"
+                  })
+                }
+              });
+            } else {
+              // Use Serper for search
+              try {
+                logger.info(`Executing Serper search for: "${searchQuery}"`);
+                
+                const response = await axios.post(SERPER_SEARCH_URL, { q: searchQuery }, {
+                  headers: {
+                    'X-API-KEY': SERPER_API_KEY,
+                    'Content-Type': 'application/json'
+                  }
+                });
+                
+                // Process results
+                const serperResults = response.data;
+                const formattedResults = {
+                  query: searchQuery,
+                  results: []
+                };
+                
+                // Process organic results
+                if (serperResults.organic && serperResults.organic.length > 0) {
+                  const limitedResults = serperResults.organic.slice(0, 5);
+                  
+                  formattedResults.results = limitedResults.map((item: any) => ({
+                    title: item.title || 'Untitled',
+                    link: item.link || '#',
+                    snippet: item.snippet || 'No description available',
+                    source: 'Serper Search'
+                  }));
+                }
+                
+                // Extract useful information from search results
+                let researchResults = "# Research Findings\n\n";
+                
+                // Type assertion for the results array
+                const typedResults = formattedResults.results as Array<{
+                  title: string;
+                  link: string;
+                  snippet: string;
+                  source: string;
+                }>;
+                
+                typedResults.forEach((result, index) => {
+                  researchResults += `## Source ${index + 1}: ${result.title}\n`;
+                  researchResults += `${result.snippet}\n\n`;
+                  researchResults += `URL: ${result.link}\n\n`;
+                });
+                
+                // Add the answer box if available
+                if (serperResults.answerBox) {
+                  researchResults += `## Key Information\n`;
+                  researchResults += `${serperResults.answerBox.answer || serperResults.answerBox.snippet}\n\n`;
+                  if (serperResults.answerBox.title) {
+                    researchResults += `Source: ${serperResults.answerBox.title}\n\n`;
+                  }
+                }
+                
+                // Update the subtask with the real search results
+                await prisma.agentSubTask.update({
+                  where: { id: firstSubtask.id },
+                  data: { 
+                    status: 'completed',
+                    toolOutput: JSON.stringify({
+                      result: researchResults,
+                      raw: formattedResults,
+                      source: "Serper Search"
+                    })
+                  }
+                });
+                
+                logger.info(`Serper search completed with ${formattedResults.results.length} results`);
+              } catch (error) {
+                logger.error(`Error executing Serper search: ${error}`);
+                
+                // If Serper fails, fall back to OpenAI
+                const openai = new OpenAI({
+                  apiKey: process.env.OPENAI_API_KEY
+                });
+                
+                const response = await openai.chat.completions.create({
+                  model: "gpt-4o",
+                  messages: [
+                    {
+                      role: "system",
+                      content: "You are a research specialist. Research the topic thoroughly and provide comprehensive information. Structure your response as a detailed research document with clear sections."
+                    },
+                    {
+                      role: "user",
+                      content: `Research task: ${searchQuery}`
+                    }
+                  ]
+                });
+                
+                await prisma.agentSubTask.update({
+                  where: { id: firstSubtask.id },
+                  data: { 
+                    status: 'completed',
+                    toolOutput: JSON.stringify({
+                      result: response.choices[0].message.content,
+                      source: "AI Research (OpenAI) - Serper Search Failed"
+                    })
+                  }
+                });
+              }
+            }
+          } else {
+            // For non-research tools, just mark as completed
+            await prisma.agentSubTask.update({
+              where: { id: firstSubtask.id },
+              data: { 
+                status: 'completed',
+                toolOutput: JSON.stringify({
+                  result: `Initial processing of task with goal: ${goalText}`,
+                  source: "AI Agent"
+                })
+              }
+            });
+          }
+          
+          logger.info(`Task status updated to executing. The scheduled job will pick up and process the remaining subtasks.`);
+        } catch (error) {
+          logger.error(`Failed to update subtask ${firstSubtask.id}: ${error}`);
+          throw error;
+        }
       }
       
       // Return the task with subtasks

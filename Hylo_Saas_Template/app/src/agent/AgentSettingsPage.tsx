@@ -99,6 +99,8 @@ function getToolDescription(toolName: string): string {
   switch (toolName) {
     case 'Search':
       return 'Search the web for information';
+    case 'SerperSearch':
+      return 'Enhanced web search using Serper.dev API';
     case 'Browser':
       return 'Navigate and interact with web pages';
     case 'Docs':

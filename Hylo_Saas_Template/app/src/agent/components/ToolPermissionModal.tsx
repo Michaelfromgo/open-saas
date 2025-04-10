@@ -15,8 +15,9 @@ export default function ToolPermissionModal({
 }: ToolPermissionModalProps) {
   if (!isOpen) return null;
 
-  // Filter to only show the Search tool
+  // Filter to only show the Search tools
   const searchTool = tools.find(tool => tool.name === 'Search') || { name: 'Search', enabled: true };
+  const serperSearchTool = tools.find(tool => tool.name === 'SerperSearch') || { name: 'SerperSearch', enabled: true };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -42,8 +43,27 @@ export default function ToolPermissionModal({
             </button>
           </div>
           
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-gray-700">Serper Search</span>
+              <p className="text-sm text-gray-500">
+                Enhanced web search using Serper.dev API
+              </p>
+            </div>
+            <button
+              onClick={() => onToggleTool('SerperSearch')}
+              className={`px-4 py-2 rounded ${
+                serperSearchTool.enabled
+                  ? 'bg-green-500 text-white'
+                  : 'bg-red-500 text-white'
+              }`}
+            >
+              {serperSearchTool.enabled ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+          
           <div className="mt-2 p-3 bg-blue-50 rounded text-sm text-blue-800">
-            <p>Note: Currently only the Search tool is available. Additional tools will be added in future updates.</p>
+            <p>Note: Currently only search tools are available. Additional tools will be added in future updates.</p>
           </div>
         </div>
         <div className="mt-6 flex justify-end">

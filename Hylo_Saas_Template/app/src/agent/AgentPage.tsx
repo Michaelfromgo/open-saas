@@ -154,6 +154,7 @@ export default function AgentPage() {
         onClose={() => setIsToolPermissionModalOpen(false)}
         tools={[
           { name: 'Search', enabled: true },
+          { name: 'SerperSearch', enabled: true },
         ]}
         onToggleTool={handleToolPermissionConfirm}
       />

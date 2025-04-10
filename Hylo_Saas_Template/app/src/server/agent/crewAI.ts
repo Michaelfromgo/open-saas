@@ -194,28 +194,20 @@ export class Crew implements CrewInterface {
         logger.info(`Planning phase: Using ${this.tasks.length} existing tasks`);
       }
       
-      // 2. Execution phase
-      logger.info(`Entering execution phase with ${this.tasks.length} tasks...`);
-      this.status = 'executing';
-      this.updatedAt = new Date();
-      const results = await this.executeTasks();
-      logger.info(`Execution phase complete with ${results.length} results`);
+      // We don't actually execute tasks here - that's handled by the job system
+      // Just return a plan
+      logger.info(`Returning plan with ${this.tasks.length} tasks`);
       
-      // 3. Synthesis phase
-      logger.info(`Starting synthesis phase...`);
-      const finalResult = await this.synthesizeResults(results);
-      logger.info(`Synthesis phase complete, final output length: ${finalResult.length} chars`);
-      this.finalOutput = finalResult;
-      this.status = 'completed';
-      this.updatedAt = new Date();
+      // Return plan details
+      const planDetails = JSON.stringify(this.tasks.map(t => ({
+        id: t.id,
+        description: t.description,
+        status: t.status
+      })));
       
       return {
-        result: finalResult,
-        plan: JSON.stringify(this.tasks.map(t => ({
-          id: t.id,
-          description: t.description,
-          status: t.status
-        })))
+        result: `Plan created with ${this.tasks.length} tasks`,
+        plan: planDetails
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.stack || error.message : String(error);
