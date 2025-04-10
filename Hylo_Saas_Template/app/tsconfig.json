@@ -25,6 +25,16 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "skipLibCheck": true,
     "allowJs": true,
+    "baseUrl": ".",
+    "paths": {
+      "@wasp/client/*": [".wasp/out/client/*"],
+      "@wasp/server/*": [".wasp/out/server/*"],
+      "@wasp/jobs/*": [".wasp/out/jobs/*"],
+      "@wasp/dbClient": [".wasp/out/dbClient/index.ts"],
+      "@wasp/core/*": [".wasp/out/core/*"],
+      "@wasp/actions/types": [".wasp/out/actions/types.ts"],
+      "@wasp/entities": [".wasp/out/entities/index.ts"]
+    },
     "typeRoots": [
       // This is needed to properly support Vitest testing with jest-dom matchers.
       // Types for jest-dom are not recognized automatically and Typescript complains

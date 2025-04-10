@@ -382,3 +382,74 @@ job sendNewsletter {
   entities: [User]
 }
 //#endregion
+
+//#region AI Agent
+route AgentRoute { path: "/agent", to: AgentPage }
+page AgentPage {
+  authRequired: true,
+  component: import AgentPage from "@src/agent/AgentPage"
+}
+
+route AgentTasksRoute { path: "/agent/tasks", to: AgentTasksPage }
+page AgentTasksPage {
+  authRequired: true,
+  component: import AgentTasksPage from "@src/agent/AgentTasksPage"
+}
+
+route AgentSettingsRoute { path: "/agent/settings", to: AgentSettingsPage }
+page AgentSettingsPage {
+  authRequired: true,
+  component: import AgentSettingsPage from "@src/agent/AgentSettingsPage"
+}
+
+action createAgentTask {
+  fn: import { createAgentTask } from "@src/agent/operations",
+  entities: [User, AgentTask, AgentSubTask]
+}
+
+action updateAgentTaskStatus {
+  fn: import { updateAgentTaskStatus } from "@src/agent/operations",
+  entities: [AgentTask]
+}
+
+action stopAgentTask {
+  fn: import { stopAgentTask } from "@src/agent/operations",
+  entities: [AgentTask, AgentSubTask]
+}
+
+action updateAgentSubTask {
+  fn: import { updateAgentSubTask } from "@src/agent/operations",
+  entities: [AgentSubTask]
+}
+
+query getAgentTasks {
+  fn: import { getAgentTasks } from "@src/agent/operations",
+  entities: [User, AgentTask]
+}
+
+query getAgentTask {
+  fn: import { getAgentTask } from "@src/agent/operations",
+  entities: [User, AgentTask, AgentSubTask]
+}
+
+query getEnabledTools {
+  fn: import { getEnabledTools } from "@src/agent/operations",
+  entities: [User, EnabledTools]
+}
+
+action updateEnabledTools {
+  fn: import { updateEnabledTools } from "@src/agent/operations",
+  entities: [User, EnabledTools]
+}
+//#endregion
+
+job processAgentSubTask {
+  executor: PgBoss,
+  perform: {
+    fn: import { processAgentSubTask } from "@src/server/jobs/agentWorker"
+  },
+  schedule: {
+    cron: "* * * * *"  // Run every minute
+  },
+  entities: [AgentTask, AgentSubTask]
+}
