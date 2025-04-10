@@ -5,7 +5,7 @@ import { contentSections } from './components/NavBar/contentSections';
 import { landingPageNavigationItems } from '../landing-page/contentSections';
 import { useMemo, useEffect } from 'react';
 import { routes } from 'wasp/client/router';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from 'wasp/client/auth';
 import { useIsLandingPage } from './hooks/useIsLandingPage';
 import { updateCurrentUserLastActiveTimestamp } from 'wasp/client/operations';
@@ -37,6 +37,11 @@ export default function App() {
       }
     }
   }, [user]);
+
+  // Redirect to agent page if user is logged in and at the home page
+  if (user && location.pathname === '/') {
+    return <Navigate to={routes.AgentRoute.to} replace />;
+  }
 
   return (
     <>

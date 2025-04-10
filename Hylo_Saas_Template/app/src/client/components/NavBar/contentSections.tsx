@@ -8,28 +8,8 @@ export const contentSections: NavigationItem[] = [
     to: '/',
   },
   {
-    name: 'Agent',
-    to: '/agent',
-  },
-  {
-    name: 'Tasks',
-    to: '/agent/tasks',
-  },
-  {
-    name: 'Settings',
-    to: '/agent/settings',
-  },
-  {
-    name: 'File Upload',
-    to: '/file-upload',
-  },
-  {
     name: 'Meal Plan',
     to: '/meal-plan',
-  },
-  {
-    name: 'Admin',
-    to: '/admin',
   },
 ];
 

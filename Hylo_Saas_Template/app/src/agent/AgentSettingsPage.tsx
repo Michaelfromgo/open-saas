@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getEnabledTools, updateEnabledTools } from 'wasp/client/operations';
+import AgentSubHeader from './components/AgentSubHeader';
 
 interface EnabledTool {
   id: string;
@@ -44,7 +45,7 @@ export default function AgentSettingsPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
       </div>
     );
   }
@@ -52,7 +53,7 @@ export default function AgentSettingsPage() {
   if (error) {
     return (
       <div className="p-4">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded">
           {error}
         </div>
       </div>
@@ -60,21 +61,24 @@ export default function AgentSettingsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Agent Settings</h1>
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Agent Settings</h1>
+      <p className="text-gray-600 dark:text-gray-300 mb-4">Configure your AI assistant's tools and capabilities</p>
       
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Enabled Tools</h2>
+      <AgentSubHeader />
+      
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/20 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Enabled Tools</h2>
         <div className="space-y-4">
           {tools.map(tool => (
-            <div key={tool.id} className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">{tool.toolName}</h3>
-                <p className="text-sm text-gray-500">
+            <div key={tool.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+              <div className="mb-3 sm:mb-0">
+                <h3 className="font-medium text-gray-900 dark:text-white">{tool.toolName}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {getToolDescription(tool.toolName)}
                 </p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label className="relative inline-flex items-center cursor-pointer self-start sm:self-center">
                 <input
                   type="checkbox"
                   className="sr-only peer"
