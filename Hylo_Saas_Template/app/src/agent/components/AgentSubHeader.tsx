@@ -12,8 +12,9 @@ export default function AgentSubHeader() {
   
   return (
     <div className="w-full mb-6">
-      <div className="bg-white dark:bg-gray-800 px-4 py-3 rounded-lg shadow dark:shadow-gray-700/20 mb-4 overflow-x-auto">
-        <nav className="flex space-x-1 md:space-x-4">
+      <div className="bg-white dark:bg-gray-800 px-4 py-3 rounded-lg shadow dark:shadow-gray-700/20 mb-4">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">AI Research Assistant</h1>
+        <nav className="flex space-x-1 md:space-x-4 overflow-x-auto">
           {navItems.map((item) => (
             <Link
               key={item.path}

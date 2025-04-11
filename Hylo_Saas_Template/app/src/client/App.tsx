@@ -16,17 +16,19 @@ import { updateCurrentUserLastActiveTimestamp } from 'wasp/client/operations';
  */
 export default function App() {
   const location = useLocation();
-  const { data: user } = useAuth();
-  const isLandingPage = useIsLandingPage();
-  const navigationItems = isLandingPage ? landingPageNavigationItems : contentSections;
-  
-  const shouldDisplayAppNavBar = useMemo(() => {
-    return location.pathname !== routes.LoginRoute.build() && location.pathname !== routes.SignupRoute.build();
-  }, [location]);
+  const isAdminDashboard = location.pathname.startsWith('/admin');
+  const isLandingPage = location.pathname === '/';
+  const isAuthPage = ['/login', '/signup', '/request-password-reset', '/password-reset'].includes(location.pathname);
+  const shouldDisplayAppNavBar = !isAdminDashboard && !isAuthPage;
 
-  const isAdminDashboard = useMemo(() => {
-    return location.pathname.startsWith('/admin');
-  }, [location]);
+  const { data: user, isLoading: isUserLoading } = useAuth();
+
+  const navigationItems = useMemo(() => {
+    if (!user) {
+      return [];
+    }
+    return contentSections;
+  }, [user]);
 
   useEffect(() => {
     if (user) {

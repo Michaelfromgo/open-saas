@@ -2,6 +2,10 @@
   "dependencies": {
     "@types/uuid": "^10.0.0",
     "axios": "^1.8.4",
+    "date-fns": "^4.1.0",
+    "openai": "^4.93.0",
+    "react-hook-form": "^7.55.0",
+    "react-select": "^5.10.1",
     "scrapfly-sdk": "^0.6.9",
     "uuid": "^11.1.0"
   }

@@ -87,8 +87,11 @@ wasp deploy fly deploy
 wasp deploy fly deploy --skip-client
 
 # To deploy only frontend updates
-wasp deploy fly deploy --skip-server
+wasp deploy fly deploy --skip-server 
+   or
+fly deploy -c fly-server.toml -a hylo-saas-server
 ```
+
 
 #### Fly.io Management Commands
 ```bash
@@ -126,3 +129,5 @@ The application exposes several endpoints:
 
 For detailed API documentation, refer to the operations.ts files in each feature directory.
 
+cd app && fly deploy -c fly-server.toml -a hylo-saas-server
+fly deploy -c fly-server.toml -a hylo-saas-server

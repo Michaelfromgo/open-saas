@@ -453,3 +453,58 @@ job processAgentSubTask {
   },
   entities: [User, AgentTask, AgentSubTask]
 }
+
+//#region LifeCoach
+route LifeCoachRoute { path: "/lifecoach", to: LifeCoachPage }
+page LifeCoachPage {
+  authRequired: true,
+  component: import LifeCoachPage from "@src/lifecoach/LifeCoachPage"
+}
+
+route LifeCoachOnboardingRoute { path: "/lifecoach/onboarding", to: LifeCoachOnboardingPage }
+page LifeCoachOnboardingPage {
+  authRequired: true,
+  component: import LifeCoachOnboardingPage from "@src/lifecoach/LifeCoachOnboardingPage"
+}
+
+route LifeCoachChatRoute { path: "/lifecoach/chat", to: LifeCoachChatPage }
+page LifeCoachChatPage {
+  authRequired: true,
+  component: import LifeCoachChatPage from "@src/lifecoach/LifeCoachChatPage"
+}
+
+action createLifeCoachGoal {
+  fn: import { createLifeCoachGoal } from "@src/lifecoach/operations",
+  entities: [User, LifeCoachGoal]
+}
+
+action createDailyCheckin {
+  fn: import { createDailyCheckin } from "@src/lifecoach/operations",
+  entities: [User, LifeCoachGoal, DailyCheckin]
+}
+
+action generateWeeklySummary {
+  fn: import { generateWeeklySummary } from "@src/lifecoach/operations",
+  entities: [User, LifeCoachGoal, DailyCheckin, WeeklySummary]
+}
+
+action sendLifeCoachChatMessage {
+  fn: import { sendLifeCoachChatMessage } from "@src/lifecoach/chat-operations",
+  entities: [User, LifeCoachGoal, DailyCheckin, WeeklySummary, LifeCoachChatMessage]
+}
+
+query getLifeCoachGoal {
+  fn: import { getLifeCoachGoal } from "@src/lifecoach/operations",
+  entities: [User, LifeCoachGoal, DailyCheckin]
+}
+
+query getWeeklySummary {
+  fn: import { getWeeklySummary } from "@src/lifecoach/operations",
+  entities: [User, LifeCoachGoal, WeeklySummary]
+}
+
+query getLifeCoachChatHistory {
+  fn: import { getLifeCoachChatHistory } from "@src/lifecoach/chat-operations",
+  entities: [User, LifeCoachGoal, LifeCoachChatMessage]
+}
+//#endregion
