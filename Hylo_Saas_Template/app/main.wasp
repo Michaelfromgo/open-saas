@@ -409,17 +409,17 @@ action createAgentTask {
 
 action updateAgentTaskStatus {
   fn: import { updateAgentTaskStatus } from "@src/agent/operations",
-  entities: [AgentTask]
+  entities: [User, AgentTask]
 }
 
 action stopAgentTask {
   fn: import { stopAgentTask } from "@src/agent/operations",
-  entities: [AgentTask, AgentSubTask]
+  entities: [User, AgentTask, AgentSubTask]
 }
 
 action updateAgentSubTask {
   fn: import { updateAgentSubTask } from "@src/agent/operations",
-  entities: [AgentSubTask]
+  entities: [User, AgentSubTask]
 }
 
 query getAgentTasks {
@@ -451,5 +451,5 @@ job processAgentSubTask {
   schedule: {
     cron: "* * * * *"  // Run every minute
   },
-  entities: [AgentTask, AgentSubTask]
+  entities: [User, AgentTask, AgentSubTask]
 }

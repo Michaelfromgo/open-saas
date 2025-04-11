@@ -30,10 +30,8 @@ model User {
   files                     File[]
   mealPreferences           UserMealPreferences?
   mealPlans                 MealPlan[]
-  
-  // Agent Task Relations
-  agentTasks                AgentTask[]
   enabledTools              EnabledTools[]
+  agentTasks                AgentTask[]
 }
 
 model GptResponse {
@@ -127,12 +125,12 @@ model UserMealPreferences {
   user                      User            @relation(fields: [userId], references: [id])
   userId                    String          @unique
 
-  calorieTarget             Int
-  mealsPerDay               Int
-  dietType                  String[]
-  allergies                 String[]
-  cuisines                  String[]
-  prepTime                  String
+  calorieTarget             Int             @default(2000)
+  mealsPerDay               Int             @default(3)
+  dietType                  String[]        @default([])
+  allergies                 String[]        @default([])
+  cuisines                  String[]        @default([])
+  prepTime                  String          @default("30 min")
   useLeftovers              Boolean         @default(true)
   repeatBreakfast           Boolean         @default(true)
   breakfastOptions          Int             @default(2)
@@ -146,51 +144,54 @@ model MealPlan {
   user                      User            @relation(fields: [userId], references: [id])
   userId                    String
 
-  planData                  Json
-}
-
-model AgentTask {
-  id            String          @id @default(uuid())
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  user          User            @relation(fields: [userId], references: [id])
-  userId        String
-
-  goalText      String
-  status        String          // "planned" | "executing" | "completed" | "error"
-  finalOutput   String?
-  errorMessage  String?
-
-  subtasks      AgentSubTask[]
-}
-
-model AgentSubTask {
-  id            String          @id @default(uuid())
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  task          AgentTask       @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  taskId        String
-
-  stepNumber    Int
-  tool          String
-  toolInput     Json
-  toolOutput    Json?
-  status        String          // "pending" | "in_progress" | "completed" | "failed"
-  agentThought  String?
+  planData                  Json            // Stores the complete meal plan with recipes and nutritional info
 }
 
 model EnabledTools {
-  id            String          @id @default(uuid())
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
 
-  user          User            @relation(fields: [userId], references: [id])
-  userId        String
-
-  toolName      String
-  enabled       Boolean         @default(true)
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    String
+  
+  toolName                  String
+  enabled                   Boolean         @default(true)
 
   @@unique([userId, toolName])
+}
+
+model AgentTask {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    String
+
+  goalText                  String
+  status                    String          @default("planning") // planning, executing, completed, error, stopped
+  errorMessage              String?
+  finalOutput               String?
+
+  subtasks                  AgentSubTask[]
+}
+
+model AgentSubTask {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+
+  task                      AgentTask       @relation(fields: [taskId], references: [id])
+  taskId                    String
+
+  stepNumber                Int
+  tool                      String          // Name of the tool to use, e.g., "Search", "CrewAI-Research"
+  status                    String          @default("pending") // pending, processing, completed, error, stopped
+  toolInput                 Json?           // Input parameters for the tool
+  toolOutput                Json?           // Output from the tool execution
+  agentThought              String?         // Reasoning behind this step
+  error                     String?         // Error message if execution failed
+  isLeftoverFrom            String?         // If this is using leftovers, name of the source meal
+  leftoverFor               String?         // If this meal makes leftovers, name of the target meal
 }
